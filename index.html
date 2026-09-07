@@ -61,6 +61,18 @@ body{
   overflow:hidden; -webkit-font-smoothing:antialiased;
   user-select:none; -webkit-user-select:none;
   font-variant-numeric:tabular-nums;
+  /* Щипок должен приближать остров, а не страницу, и двойное касание не
+     должно масштабировать вёрстку. Панелям при этом нужна обычная прокрутка,
+     поэтому не none, а manipulation. */
+  touch-action:manipulation;
+  overscroll-behavior:none;
+  -webkit-touch-callout:none;
+}
+
+/* Долгое нажатие на картинку не должно звать системное меню «сохранить
+   изображение»: в Чуддексе и лавке это перекрывает пол-экрана. */
+img{
+  -webkit-touch-callout:none; -webkit-user-drag:none; user-select:none;
 }
 button{font-family:var(--ui); font-weight:800; color:var(--ink); cursor:pointer}
 :focus-visible{outline:3px solid #fff; outline-offset:2px}
@@ -785,6 +797,47 @@ button.mm-skill:disabled{cursor:default}
 .exp-goal b.ok{color:#2E7D32}
 .exp-goal b.no{color:#B03A2E}
 .mrow.on{background:rgba(120,204,70,.22); border-color:#4FA03B}
+
+/* ================= телефон лёжа =================
+   Основная поза для игры: высоты всего ~390 точек, и панели, рассчитанные на
+   вертикальный экран, съедают её целиком. Здесь всё то же самое, но ниже и
+   компактнее — чтобы за панелью оставался виден остров. */
+@media (max-height:520px) and (orientation:landscape){
+  /* лавка: карточки мельче, помещается вдвое больше */
+  .items{grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:7px}
+  .item{padding:6px 6px 7px; gap:3px; border-radius:12px}
+  .item{min-height:0}
+  .item canvas, .item .mon-art{width:72px; height:50px; border-radius:9px}
+  .item .n{font-size:11px}
+  .item .sub{font-size:9.5px}
+  .item .c{font-size:11px; padding:1px 7px 1px 2px}
+  .item .c img{width:15px; height:15px}
+
+  /* панели снизу: не выше половины экрана, со своей прокруткой */
+  #shop, #sheet{max-height:calc(100vh - 96px)}
+  .hd h3{font-size:14px}
+  .tabs .tab{font-size:11.5px; padding:5px 12px}
+
+  /* грядки, яйца, вылазки — те же карточки, только ниже */
+  .crops{grid-template-columns:repeat(auto-fill,minmax(118px,1fr)); gap:7px}
+  .crop{padding:7px 8px}
+  .crop .n{font-size:12px}
+  .crop .d{font-size:10.5px}
+  .slots{gap:7px}
+  .slot{padding:7px 8px}
+  .mrow{padding:6px; gap:8px; margin-top:6px}
+  .mrow .th{width:42px; height:42px}
+  .mrow .nm{font-size:12px}
+  .exp-face{width:44px; height:44px}
+  .exp-goal span{font-size:9px; padding:5px 4px}
+  .exp-goal b{font-size:14px}
+
+  /* карточка чудища в модалке: колонки вместо простыни */
+  .modal .card{max-height:calc(100vh - 40px)}
+  .mm-skill{padding:5px 7px}
+  .mm-sk-ic{width:30px; height:30px}
+  .mm-stats{grid-template-columns:repeat(4,1fr)}
+}
 
 </style>
 <style>
@@ -1643,6 +1696,29 @@ button.mm-skill:disabled{cursor:default}
 .dx-sk-lv{
   font-size:10px; font-weight:900; letter-spacing:.04em; color:#ffd873;
   white-space:nowrap; text-transform:uppercase;
+}
+
+/* ---------- телефон лёжа ----------
+   Высоты ~390 точек: фильтры в прежнем виде съедали половину, и до карточек
+   дело не доходило. Здесь всё то же самое, только плотнее. */
+@media (max-height:520px) and (orientation:landscape){
+  #chuddex{padding:44px 10px 10px}
+  .dx-head h2{font-size:15px}
+  .dx-row{gap:4px}
+  .dx-lb{min-width:56px; font-size:8.5px; letter-spacing:.06em}
+  .dx-chip{font-size:10.5px; padding:3px 8px}
+  .dx-filters{gap:3px}
+  .dx-grid{grid-template-columns:repeat(auto-fill,minmax(104px,1fr)); gap:7px}
+  .dx-card{padding:6px 5px 6px; gap:3px; border-radius:12px; border-width:2px}
+  .dx-face{height:56px}
+  /* картинка не должна вылезать на подпись, когда клетка стала ниже */
+  .dx-art{max-height:56px}
+  .dx-frame .dx-art{height:52px}
+  .dx-name{font-size:11px}
+  .dx-tags{gap:3px}
+  .dx-have{font-size:10px}
+  /* карточка вида поверх сетки тоже ниже */
+  .dx-open{max-height:calc(100vh - 60px)}
 }
 
 </style>
@@ -3863,11 +3939,11 @@ const UNLOCKS = [
   { level: 1, kind: "build", id: "breeding", name: "Сад разведения", desc: "Своди пару и получай новые виды." },
   { level: 1, kind: "build", id: "cave", name: "Пещера экспедиций", desc: "Отправляй чудищ за добычей: золото, апельсины и кристаллы." },
 
-  { level: 2, kind: "element", id: "water", name: "Логово воды", desc: "Водяные чудища получают свой дом." },
+  { level: 1, kind: "element", id: "water", name: "Логово воды", desc: "Водяные чудища получают свой дом." },
+  { level: 1, kind: "element", id: "earth", name: "Логово земли", desc: "Земляные чудища получают свой дом." },
+  { level: 1, kind: "element", id: "divine", name: "Богоподобное логово", desc: "Единственный дом для богоподобных: другие им не годятся." },
   { level: 4, kind: "home", id: "sands", name: "Песчаный надел", desc: "Второй остров под стройку — теперь его можно купить." },
-  { level: 5, kind: "element", id: "earth", name: "Логово земли", desc: "Земляные чудища получают свой дом." },
-  { level: 7, kind: "home", id: "sakura", name: "Сакуровый сад", desc: "Третий остров становится доступен для покупки." },
-  { level: 12, kind: "element", id: "divine", name: "Богоподобное логово", desc: "Единственный дом для богоподобных: другие им не годятся." }
+  { level: 7, kind: "home", id: "sakura", name: "Сакуровый сад", desc: "Третий остров становится доступен для покупки." }
 ];
 
 /** Всё, что открыто на этом уровне. */
@@ -6398,6 +6474,52 @@ function showAway(r) {
 }
 function initWelcome() {
   bus.on("away:report", showAway);
+}
+
+
+/* ===== src/core/gestures.js ===== */
+/* Жесты телефона, которые игре мешают.
+
+   Щипок должен приближать остров, а не страницу. Метатег viewport с
+   user-scalable=no это обещает, но Safari его давно не слушает: страницу всё
+   равно можно растянуть двумя пальцами, и вёрстка разъезжается — особенно
+   если щипок пришёлся на панель, а не на холст.
+
+   Поэтому запрет вешается руками:
+     · gesturestart/change/end — фирменные события Safari;
+     · любое касание двумя пальцами вне холста;
+     · двойное касание, которым браузер тоже умеет масштабировать.
+
+   Холст при этом не трогаем: он ловит щипок сам (core/camera.js) через
+   pointer-события, а им preventDefault на touchmove не мешает. */
+
+const наХолсте = t => !!(t && t.closest && t.closest("#cv"));
+function initGestures() {
+  const app = document.getElementById("app") || document;
+
+  // Safari: щипок как отдельное событие
+  for (const тип of ["gesturestart", "gesturechange", "gestureend"])
+    document.addEventListener(тип, e => e.preventDefault(), { passive: false });
+
+  // два пальца где угодно, кроме холста, — это попытка растянуть страницу
+  document.addEventListener("touchmove", e => {
+    if (e.touches.length > 1 && !наХолсте(e.target)) e.preventDefault();
+  }, { passive: false });
+
+  /* Двойное касание. touch-action:manipulation его уже гасит, но на старых
+     Safari — нет, поэтому глушим и здесь: два касания подряд ближе трёхсот
+     миллисекунд считаем попыткой приблизить. */
+  let последнее = 0;
+  document.addEventListener("touchend", e => {
+    const t = Date.now();
+    if (t - последнее < 300 && !наХолсте(e.target)) e.preventDefault();
+    последнее = t;
+  }, { passive: false });
+
+  // долгое нажатие на картинку не должно звать системное меню
+  app.addEventListener("contextmenu", e => {
+    if (e.target && e.target.tagName === "IMG") e.preventDefault();
+  });
 }
 
 
@@ -11479,6 +11601,7 @@ function initAdventure() {
 
 
 
+
 /* ---------- загрузка сохранения или новая игра ---------- */
 let seenAt = 0;                     // когда игрок заходил в прошлый раз
 
@@ -11760,6 +11883,7 @@ async function boot() {
   initAdmin();
   initHints();
   initWelcome();
+  initGestures();          // щипок приближает остров, а не страницу
   watchDockHeight();
   syncTeam();                       // отряд мог остаться от проданных чудищ
 
