@@ -839,127 +839,6 @@ button.mm-skill:disabled{cursor:default}
   .mm-stats{grid-template-columns:repeat(4,1fr)}
 }
 
-/* ================= карточка чудища =================
-   Один экран без вкладок: крупный зверь с кольцом уровня, четыре стата,
-   четвёрка приёмов плитками. Всё остальное — под «Подробностями». Прежняя
-   карточка вываливала одиннадцать блоков подряд, из них половину занимал
-   список из девяти приёмов. */
-.mc{display:grid}
-.mc-hero{position:relative; background:radial-gradient(62% 62% at 50% 60%,
-  rgba(255,255,255,.55), rgba(255,255,255,0) 72%)}
-.mc-art{
-  width:100%; aspect-ratio:1/.58; background-size:contain;
-  background-position:center 55%; background-repeat:no-repeat;
-}
-.mc-ring{
-  position:absolute; right:12px; bottom:6px; width:64px; height:64px; border-radius:50%;
-  display:grid; place-items:center; font-family:var(--disp, "Unbounded", sans-serif);
-  font-weight:800; color:var(--ink);
-  background:conic-gradient(#FFC24D 0 var(--p,0%), rgba(51,36,26,.16) var(--p,0%) 100%);
-  box-shadow:0 3px 0 rgba(51,36,26,.35);
-}
-.mc-ring span{
-  width:50px; height:50px; border-radius:50%; display:grid; place-items:center;
-  background:linear-gradient(180deg,#FFFDF6,#FFF1D8); font-size:19px;
-  box-shadow:inset 0 0 0 2px rgba(51,36,26,.25);
-}
-.mc-ring i{
-  position:absolute; bottom:-9px; font-style:normal; font-size:8px; font-weight:900;
-  letter-spacing:.09em; color:var(--ink-2); background:var(--parch);
-  padding:1px 6px; border-radius:7px; border:2px solid var(--line);
-}
-
-.mc-body{display:grid; gap:9px; padding:12px}
-.mc-line{display:flex; align-items:center; gap:6px; flex-wrap:wrap}
-.mc-rar{
-  margin-left:auto; display:inline-flex; align-items:center; gap:6px;
-  font-size:12px; font-weight:900; color:var(--ink-2);
-}
-.mc-xp{position:relative; height:11px; border-radius:99px; background:var(--well);
-  box-shadow:var(--sunk); overflow:hidden}
-.mc-xp i{display:block; height:100%; background:linear-gradient(90deg,#FFD873,#F0A93A)}
-.mc-xp-lbl{display:flex; justify-content:space-between; gap:10px;
-  font-size:11px; font-weight:800; color:var(--ink-2); font-variant-numeric:tabular-nums}
-
-.mc-stats{display:grid; grid-template-columns:repeat(4,1fr); gap:6px}
-.mc-stats div{
-  padding:7px 3px; border-radius:12px; text-align:center;
-  background:var(--well); box-shadow:var(--sunk);
-}
-.mc-stats b{display:block; font-family:var(--disp, "Unbounded", sans-serif);
-  font-size:15px; font-weight:800; color:var(--ink); font-variant-numeric:tabular-nums}
-.mc-stats span{font-size:8.5px; font-weight:900; letter-spacing:.06em; color:var(--ink-2)}
-
-.mc-sk-head{
-  display:flex; align-items:center; gap:8px; margin-top:2px;
-  font-family:var(--disp, "Unbounded", sans-serif); font-size:11px; font-weight:800;
-  letter-spacing:.06em; text-transform:uppercase; color:var(--ink-2);
-}
-.mc-sk-head b{color:#2E7D32}
-.mc-more{
-  margin-left:auto; font:inherit; font-family:var(--ui); font-size:12px; font-weight:900;
-  padding:4px 12px; border-radius:999px; cursor:pointer; color:var(--ink);
-  background:var(--well); border:2px solid var(--line); box-shadow:var(--sunk);
-  letter-spacing:0; text-transform:none;
-}
-.mc-slots{display:grid; grid-template-columns:repeat(4,1fr); gap:6px}
-.mc-slot{
-  aspect-ratio:1; display:grid; place-items:center; align-content:center; gap:2px;
-  padding:4px; border-radius:12px; text-align:center;
-  font-size:9px; font-weight:900; line-height:1.1; color:var(--ink-2);
-  background:linear-gradient(180deg,#FFFEFA,#FFF1D8); border:2.5px solid var(--line);
-  box-shadow:var(--lift-sm);
-}
-.mc-slot img{width:28px; height:28px; object-fit:contain}
-.mc-glyph{font-size:20px; line-height:1}
-.mc-slot.free{
-  background:rgba(0,0,0,.05); border-style:dashed; box-shadow:none; color:var(--ink-2);
-  opacity:.7;
-}
-.mc-all{display:grid; gap:6px}
-.mc-hint{font-size:11.5px; font-weight:700; color:var(--ink-2); line-height:1.35}
-
-.mc-det{border-radius:12px; background:var(--well); box-shadow:var(--sunk)}
-.mc-det summary{
-  padding:8px 12px; cursor:pointer; list-style:none;
-  font-size:12.5px; font-weight:900; color:var(--ink-2);
-}
-.mc-det summary::-webkit-details-marker{display:none}
-.mc-det summary::after{content:"▾"; float:right}
-.mc-det[open] summary::after{content:"▴"}
-.mc-det-in{display:grid; gap:7px; padding:0 12px 11px; font-size:12.5px}
-.mc-det-in > div{display:flex; align-items:center; justify-content:space-between; gap:10px}
-.mc-det-in span{color:var(--ink-2); font-weight:700}
-.mc-det-in b{font-weight:900; display:flex; align-items:center; gap:4px}
-
-/* лёжа зверь встаёт слева, всё остальное справа — карточка помещается целиком */
-@media (max-height:520px) and (orientation:landscape){
-  .mc{grid-template-columns:40% 60%; align-items:start}
-  .mc-art{aspect-ratio:1/.88}
-  .mc-ring{width:52px; height:52px}
-  .mc-ring span{width:40px; height:40px; font-size:15px}
-  .mc-body{gap:7px; padding:10px}
-  .mc-slot img{width:22px; height:22px}
-  .mc-stats b{font-size:13px}
-}
-
-/* [hidden] должен побеждать display:grid — иначе список приёмов виден всегда */
-.mc-all[hidden]{display:none}
-
-/* Строки полного списка внутри карточки: пергамент, а не тёмная панель —
-   раньше они жили на тёмном фоне и на светлой карточке смотрелись чужими. */
-.mc-all .mm-skill{
-  background:linear-gradient(180deg,#FFFEFA,#FFF3DE); border:2.5px solid var(--line);
-  border-radius:12px; color:var(--ink); box-shadow:var(--lift-sm); padding:7px 9px;
-}
-.mc-all .mm-skill b{color:var(--ink)}
-.mc-all .mm-skill small{color:var(--ink-2)}
-.mc-all .mm-skill .mm-sk-lv{color:var(--ink-2); font-size:10px; font-weight:900}
-.mc-all .mm-skill .mm-sk-ic{background:var(--well); box-shadow:var(--sunk)}
-.mc-all .mm-skill.on{background:linear-gradient(180deg,#EFFBE6,#DCF3C9); border-color:#4FA03B}
-.mc-all .mm-skill.on .mm-sk-lv{color:#2E7D32}
-.mc-all .mm-skill.shut{opacity:.55; filter:grayscale(.4)}
-
 </style>
 <style>
 /* ===== css/adventure.css ===== */
@@ -9367,10 +9246,6 @@ const SKILL_KIND = { damage: "урон", heal: "лечение", shield: "щит
 
 
 let openId = null;
-/* Полный список приёмов свёрнут: в карточке видна четвёрка, которая идёт в
-   бой, а девять строк раскрываются по «изменить». Состояние живёт здесь,
-   потому что карточка перерисовывается на каждый выбор. */
-let skillsOpen = false;
 
 /** Можно ли трогать набор: пятый лишний, а последний снимать нельзя. */
 function esть_проверка(есть, сейчас) {
@@ -9468,88 +9343,65 @@ function initModals() {
       + " " + esc(m ? m.name : species.name);
 
     $("#monsterModalBody").innerHTML = `
-      <div class="mc">
-        <!-- Крупный зверь и кольцо уровня: то, ради чего карточку открывают.
-             Кольцо заодно показывает опыт до следующего уровня. -->
-        <div class="mc-hero">
-          <div class="mc-art" style="background-image:url(${art})"></div>
-          <div class="mc-ring" style="--p:${pct}%">
-            <span>${level}</span><i>УРОВЕНЬ</i>
-          </div>
-        </div>
+      <div class="monster-modal-grid">
+        <div class="monster-modal-art" style="background-image:url(${art})"></div>
+        <div class="monster-modal-info">
+          <div class="mm-els">${els.map(e => elIcon(e, "md")).join("")}
+            ${els.map(e => ELEMENTS[e].name).join(" + ")} <b>ЭТАП ${stage}</b></div>
 
-        <div class="mc-body">
-          <div class="mc-line">
-            ${els.map(e => elIcon(e, "md")).join("")}
-            <span class="mc-rar">${rarityBadge(m || species)} ${rarityName(m || species)}</span>
-          </div>
+          <div class="rar-line">${rarityBadge(m || species)} ${rarityName(m || species)}
+            <span>сила ×${r.power.toFixed(2)}</span>
+            <span>доход ×${r.gold.toFixed(2)}</span>
+            <span>аппетит ×${r.food.toFixed(2)}</span></div>
 
-          <div class="mc-xp"><i style="width:${pct}%"></i></div>
-          <div class="mc-xp-lbl"><span>${growth}</span><span>${fmt(xp)} / ${fmt(need)}</span></div>
-
-          <div class="mc-stats">
-            <div><b>${stats.hp}</b><span>ЖИЗНЬ</span></div>
-            <div><b>${stats.atk}</b><span>АТАКА</span></div>
-            <div><b>${stats.def}</b><span>ЗАЩИТА</span></div>
-            <div><b>${stats.spd}</b><span>СКОРОСТЬ</span></div>
+          <div class="monster-level">
+            <span>УРОВЕНЬ <b>${level}</b></span><span>${growth}</span>
+            <div class="monster-xp"><i style="width:${pct}%"></i><b>${xp} / ${need} опыта</b></div>
           </div>
 
-          <!-- Четвёрка, которая идёт в бой. Остальные приёмы прячутся за
-               «изменить»: девять строк подряд — половина прежней карточки. -->
-          <div class="mc-sk-head">В бою
+          <div class="monster-modal-stats">
+            <span>ЖИЗНЬ<b>${stats.hp}</b></span><span>АТАКА<b>${stats.atk}</b></span>
+            <span>ЗАЩИТА<b>${stats.def}</b></span><span>СКОРОСТЬ<b>${stats.spd}</b></span>
+          </div>
+
+          <div class="monster-modal-meta">
+            <span>ЛОГОВО<b class="mm-home">${els.map(e => elIcon(e, "md")).join("")}</b></span>
+            <span>ДОХОД<b>${income.toFixed(1)} / мин</b></span>
+          </div>
+
+          <p>${esc(species.name)} — ${r.name.toLowerCase()} чудище стихии
+            «${els.map(e => ELEMENTS[e].name).join(" + ")}». Выращивай его и усиливай в боях.</p>
+
+          <!-- Приёмы: открытые можно взять в бой, будущие показаны бледнее и с
+               уровнем — чтобы игрок видел, ради чего кормить дальше.
+               В бой идут только четыре: их и выбирают нажатием. -->
+          <div class="mm-sk-head">Приёмы в бой
             <b id="mmSkCount">${взято.length} из ${LOADOUT}</b>
-            ${m ? `<button class="mc-more" data-more>${skillsOpen ? "свернуть" : "изменить"}</button>` : ""}
-          </div>
-          <div class="mc-slots">
-            ${Array.from({ length: LOADOUT }, (_, i) => {
-              const ab = взято[i];
-              if (!ab) return `<div class="mc-slot free">пусто</div>`;
-              const face = ab.el
-                ? `<img src="${ASSET_SRC[ELEMENTS[ab.el].icon]}" alt="">`
-                : `<span class="mc-glyph">${ab.icon || "✦"}</span>`;
-              return `<div class="mc-slot" data-tip="1" data-ab="${ab.id}">
-                ${face}<span>${esc(ab.name)}</span></div>`;
-            }).join("")}
-          </div>
-
-          <div class="mc-all" ${skillsOpen ? "" : "hidden"}>
-            <div class="mc-hint">${m
-              ? "Нажми, чтобы взять приём в бой или вернуть в запас. Подержи — подробности."
-              : "У своего чудища четвёрку можно собрать самому."}</div>
-            ${skillsOf(species).map((ab, i) => {
-              const at = skillLevel(i, species), open = level >= at;
-              const face = ab.el
-                ? `<img src="${ASSET_SRC[ELEMENTS[ab.el].icon]}" alt="">`
-                : `<span class="mm-sk-glyph">${ab.icon || "✦"}</span>`;
-              const взят = взято.some(x => x.id === ab.id);
-              const тег = m && open ? "button" : "div";
-              return `<${тег} class="mm-skill k-${ab.kind} ${open ? "" : "shut"} ${взят ? "on" : ""}"
-                  data-tip="1" data-ab="${ab.id}" ${m && open ? "" : "disabled"}>
-                <span class="mm-sk-ic">${face}</span>
-                <div><b>${esc(ab.name)}</b>
-                  <small>${SKILL_KIND[ab.kind] || ""}${ab.cost ? " · " + ab.cost + " сил" : " · бесплатно"}${ab.cd ? " · раз в " + ab.cd : ""}</small></div>
-                <span class="mm-sk-lv">${!open ? "с " + at + " ур." : взят ? "в бою" : "в запасе"}</span>
-              </${тег}>`;
-            }).join("")}
-          </div>
+            ${m ? `<span>нажми, чтобы взять или снять · подержи — подробности</span>`
+                 : `<span>у своего чудища четвёрку можно собрать самому</span>`}</div>
+          <div class="mm-skills">${skillsOf(species).map((ab, i) => {
+            const at = skillLevel(i, species), open = level >= at;
+            const face = ab.el
+              ? `<img src="${ASSET_SRC[ELEMENTS[ab.el].icon]}" alt="">`
+              : `<span class="mm-sk-glyph">${ab.icon || "✦"}</span>`;
+            const взят = взято.some(x => x.id === ab.id);
+            const тег = m && open ? "button" : "div";
+            return `<${тег} class="mm-skill k-${ab.kind} ${open ? "" : "shut"} ${взят ? "on" : ""}"
+                data-tip="1" data-ab="${ab.id}" ${m && open ? "" : "disabled"}>
+              <span class="mm-sk-ic">${face}</span>
+              <div><b>${esc(ab.name)}</b>
+                <small>${SKILL_KIND[ab.kind] || ""}${ab.cost ? " · " + ab.cost + " сил" : " · бесплатно"}${ab.cd ? " · раз в " + ab.cd : ""} · по одной цели</small></div>
+              <span class="mm-sk-lv">${!open ? "с " + at + " ур." : взят ? "в бою" : "в запасе"}</span>
+            </${тег}>`;
+          }).join("")}</div>
 
           ${m ? `<button class="b hot big" id="monsterFeed">Кормить · ${feedCost(m)}
-            <img class="ic2" src="${ASSET_SRC.food}" alt="апельсины"></button>` : ""}
+            <img class="ic2" src="${ASSET_SRC.food}" alt="апельсины"></button>
+            <button class="b go" id="monsterFeed5">Кормить ×5 · ${feedCost(m) * 5}
+            <img class="ic2" src="${ASSET_SRC.food}" alt="апельсины"></button>
+            <button class="b sm" id="monsterSell">Продать · ${fmt(priceOf(m))}
+            <img class="ic2" src="${ASSET_SRC.gold}" alt="золото"></button>` : ""}
           ${cost != null ? `<button class="b gold big" id="monsterBuy">Купить яйцо · ${fmt(cost)}</button>` : ""}
-
-          <details class="mc-det">
-            <summary>Подробности</summary>
-            <div class="mc-det-in">
-              <div><span>Доход в логове</span><b>${income.toFixed(1)} / мин</b></div>
-              <div><span>Живёт в логове</span><b class="mm-home">${els.map(e => elIcon(e, "md")).join("")}</b></div>
-              <div><span>Редкость даёт</span><b>сила ×${r.power.toFixed(2)} · доход ×${r.gold.toFixed(2)}</b></div>
-              <div><span>Аппетит</span><b>×${r.food.toFixed(2)}</b></div>
-              ${m ? `<button class="b go" id="monsterFeed5">Кормить ×5 · ${feedCost(m) * 5}
-                <img class="ic2" src="${ASSET_SRC.food}" alt="апельсины"></button>
-                <button class="b sm" id="monsterSell">Продать · ${fmt(priceOf(m))}
-                <img class="ic2" src="${ASSET_SRC.gold}" alt="золото"></button>` : ""}
-            </div>
-          </details>
         </div>
       </div>`;
 
@@ -9579,12 +9431,6 @@ function initModals() {
         bus.emit("ui:sheet");
       };
     });
-
-    const more = карточка.querySelector("[data-more]");
-    if (more) more.onclick = () => {
-      skillsOpen = !skillsOpen;
-      showMonster({ m, id, sp, cost });
-    };
 
     const buy = $("#monsterBuy");
     if (buy) buy.onclick = () => { closeModal(); bus.emit("shop:buySpecies", { id, sp: species, cost }) };
