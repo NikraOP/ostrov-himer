@@ -3129,12 +3129,12 @@ const EGG = { genMs: 60e3, photoMs: 15e3, rushPerSec: 3 };
 const WORK = { rushPerSec: 2 };
 
 /**
- * Разведение. Время и цена растут с уровнями родителей: пара посильнее
- * возится дольше, зато детёныш наследует их характеристики.
+ * Разведение. Времени тем больше, чем сильнее родители: пара посильнее
+ * возится дольше, зато детёныш наследует их характеристики. Золота сведение
+ * не стоит — платой служит время, пока пара занята.
  */
 const BREED = {
   baseMs: 90e3, perLevelMs: 20e3, maxMs: 6 * 3600e3,
-  baseCost: 100, perLevelCost: 40,
   eggMs: 120e3,            // сколько яйцо от пары зреет в башне
   bonus: 1.05              // насколько детёныш крепче среднего родителей
 };
@@ -5774,10 +5774,6 @@ function breedMsRange(a, b) {
   return { min: Math.min(...all), max: Math.max(...all) };
 }
 
-/** Сколько стоит свести пару. */
-const breedCost = (a, b) =>
-  Math.round(BREED.baseCost + (a.level + b.level) * BREED.perLevelCost);
-
 /** Можно ли свести этих двоих. Возвращает причину отказа или null. */
 function breedProblem(garden, a, b) {
   if (!a || !b) return "Нужны двое родителей";
@@ -5796,11 +5792,12 @@ function busyElsewhere(m) {
 function startBreeding(garden, a, b) {
   const problem = breedProblem(garden, a, b);
   if (problem) return problem;
-  const cost = breedCost(a, b);
-  if (S.gold < cost) return "Не хватает золота";
 
-  S.gold -= cost;
-  /* Кто выйдет — решается прямо здесь, но втайне: иначе кладке неоткуда взять
+  /* Сведение бесплатное: платой служит время. Пара занята всю кладку, а
+     родителей на это время не взять ни в бой, ни в вылазку — этого хватает,
+     чтобы разведение не было бездумным.
+
+     Кто выйдет — решается прямо здесь, но втайне: иначе кладке неоткуда взять
      срок именно этого детёныша. Игрок узнает его, когда заберёт яйцо. */
   const { child, ms } = rollChild(a, b);
   garden.breedHistory = garden.breedHistory || [];
@@ -5884,7 +5881,6 @@ function takeEgg(garden) {
   return null;
 }
 
-/** Отменить кладку (золото не возвращаем — как за начатую работу). */
 /** Сколько кристаллов возьмут за то, чтобы кладка дозрела сейчас же. */
 const breedRushCrystals = garden =>
   garden && garden.breed ? rushCrystals(garden.breed.readyAt - Date.now()) : 0;
@@ -6890,9 +6886,13 @@ const expeditionsFor = cave =>
 const onExpedition = m =>
   !!m && S.builds.some(b => b.exp && (b.exp.mons || []).includes(m.id));
 
-/** Кого вообще можно отправить: живых, свободных и не в чужой вылазке. */
+/** Родитель занят кладкой в саду — тоже не свободен. */
+const onBreeding = m =>
+  !!m && S.builds.some(b => b.breed && (b.breed.a === m.id || b.breed.b === m.id));
+
+/** Кого вообще можно отправить: свободных от вылазок и от сада разведения. */
 const freeForExpedition = () =>
-  S.mons.filter(m => m.kind === "species" && !onExpedition(m));
+  S.mons.filter(m => m.kind === "species" && !onExpedition(m) && !onBreeding(m));
 
 /**
  * Что принесёт эта тройка. Считает и показывает интерфейс, и сама отправка —
@@ -6930,6 +6930,7 @@ function startExpedition(cave, expId, mons) {
   if (!mons.length) return "Отправлять некого";
   if (mons.length > exp.slots) return "В эту вылазку берут не больше " + exp.slots;
   if (mons.some(m => onExpedition(m))) return "Кто-то из них уже в походе";
+  if (mons.some(m => onBreeding(m))) return "Кто-то из них занят кладкой в саду";
 
   const итог = previewReward(exp, mons);
   cave.exp = {
@@ -8651,7 +8652,7 @@ function breedingSheet(node, b) {
   const when = span ? (span.min === span.max ? tleft(span.min)
     : tleft(span.min) + " – " + tleft(span.max)) : "";
   const info = ready
-    ? `<div class="empty">Кладка: ${when} · ${fmtShort(breedCost(a, c))} золота.
+    ? `<div class="empty">Кладка: ${when} — золота не стоит.
         Детёныш пойдёт в одного из родителей, а сила будет средней между ними.${span.min !== span.max ? " У этой пары исход не один — кто вышел, видно по сроку кладки." : ""}</div>`
     : `<div class="empty">Выбери двух разных монстров. Готовое яйцо отправится
         в башню высиживания — там нужно свободное место.</div>`;
