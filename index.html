@@ -754,6 +754,11 @@ button.mm-skill:disabled{cursor:default}
   .blog{bottom:132px; font-size:11px}
 }
 
+/* цена яйца в башне: та же, что в лавке — и видно, когда на неё не хватает */
+.crop .price{margin-top:4px; font-size:12.5px; font-weight:900; color:var(--ink)}
+.crop.no{filter:grayscale(.55) brightness(.94)}
+.crop.no .price{color:#B03A2E}
+
 </style>
 <style>
 /* ===== css/adventure.css ===== */
@@ -8017,12 +8022,21 @@ const rushEggCost = egg => Math.max(1, Math.ceil((egg.readyAt - Date.now()) / 10
 
 /** Выбор вида монстра для яйца. */
 function speciesView(node, b, slot) {
-  const list = hatchableSpecies().map(([id, sp]) => `
-    <button class="crop" data-sp="${id}">
+  /* Яйцо в башне стоит столько же, сколько в лавке: иначе через башню можно
+     было бы брать тех же чудищ даром, и лавка теряла бы смысл. Виды без цены
+     (их выводят скрещиванием) остаются бесплатными — в сборке для игроков их
+     в этом списке всё равно нет. */
+  const list = hatchableSpecies().map(([id, sp]) => {
+    const cost = sp.cost > 0 ? sp.cost : 0;
+    const бедно = cost > 0 && S.gold < cost;
+    return `
+    <button class="crop ${бедно ? "no" : ""}" data-sp="${id}" data-cost="${cost}">
       <div class="n">${sp.name}</div>
       <div class="d">${elBadge(sp)}</div>
       <div class="d" style="color:var(--ink)">яйцо ${tleft(sp.eggMs || EGG.genMs)}</div>
-    </button>`).join("");
+      <div class="d price">${cost ? gold + fmt(cost) : "даром"}</div>
+    </button>`;
+  }).join("");
 
   node.innerHTML = head("Какое яйцо заложить", `<span class="hint">место ${slot + 1}</span>`)
     + `<div class="crops">${list}</div>
@@ -8031,9 +8045,14 @@ function speciesView(node, b, slot) {
   $$("#sheet [data-sp]").forEach(btn => {
     btn.onclick = () => {
       const id = btn.dataset.sp, sp = speciesOf(id);
+      const cost = +btn.dataset.cost || 0;
+      if (cost > S.gold) return toast("Не хватает золота", "bad");
+      // золото списываем только после того, как яйцо легло: место в башне
+      // могли занять, пока выбирали
       const err = startEgg({ kind: "species", species: id, name: sp.name, el: sp.el }, sp.eggMs || EGG.genMs);
       if (err) return toast(err, "bad");
-      toast("Яйцо в башне", "good");
+      if (cost) { S.gold -= cost; bus.emit("ui:top"); persist() }
+      toast(cost ? sp.name + ": яйцо в башне за " + fmt(cost) : "Яйцо в башне", "good");
       backToSheet();
     };
   });
