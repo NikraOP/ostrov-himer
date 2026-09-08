@@ -1999,6 +1999,19 @@ button.mm-skill:disabled{cursor:default}
 .mm-skill small{font-size:10.5px; color:#aeeefa}
 .mm-sk-lv{font-size:9.5px; font-weight:900; text-transform:uppercase; color:#8fc4dc; white-space:nowrap}
 
+/* ---------- сохранение: скачать / загрузить ---------- */
+.pf-save{
+  margin-top:14px; padding:14px; border-radius:14px;
+  background:#092c47; border:2px solid #2f7ea0;
+}
+.pf-save h3{
+  margin:0 0 6px; font-family:"Unbounded", sans-serif; font-size:14px; font-weight:800;
+  color:#eaf7ff; letter-spacing:.02em;
+}
+.pf-save .pf-note{margin:0 0 10px}
+.pf-import{margin-top:10px; padding-top:10px; border-top:1px solid rgba(47,126,160,.35)}
+.pf-import p{margin:0 0 8px; font-size:12px; font-weight:800; color:#c6edf5}
+
 </style>
 <style>
 /* ===== css/quests.css ===== */
@@ -2339,6 +2352,16 @@ button,input,select{font:inherit}button{touch-action:manipulation}button:focus-v
 .tst{background:linear-gradient(180deg,#2a5460,#143643); border-color:#7a9b9c; color:#f4e8c7}
 .tst.good{border-color:#89ac8d; background:linear-gradient(180deg,#345c48,#1d3a2c)}
 .tst.bad{border-color:#cb9281; background:linear-gradient(180deg,#5a3d38,#3a2420)}
+
+/* ================= сохранение в профиле =================
+
+   Тот же приём, что и у остальных карточек экрана профиля (.pf-top,
+   .pf-row): в profile.css они писаны хардкодом под старую сине-ночную
+   палитру, здесь — перекраска в тон атласа. */
+.pf-save{background:#173e4b; border:1px solid #71938a}
+.pf-save h3{color:#eddbaf}
+.pf-import{border-top-color:#4a6d68}
+.pf-import p{color:#adc7c7}
 
 </style>
 </head>
@@ -3325,29 +3348,38 @@ const bus = {
 const SAVE_KEY = "ostrov-himer.v4";
 
 let warned = false;
+
+/**
+ * То же самое, что уходит в localStorage, — вынесено отдельно, чтобы этот
+ * список полей не пришлось повторять для скачиваемого файла сохранения
+ * (см. exportSave ниже, её зовёт кнопка «Скачать файл» в профиле).
+ */
+function serialize(state) {
+  return {
+    // когда игрок был здесь в последний раз: по этой отметке при следующем
+    // запуске считается, что успело произойти без него (game/away.js)
+    seenAt: Date.now(),
+    gold: state.gold, food: state.food, crystals: state.crystals, nid: state.nid,
+    team: state.team, adv: state.adv, dex: state.dex,
+    isle: state.isle, homes: state.homes, profile: state.profile, daily: state.daily,
+    builds: state.builds.map(b => ({
+      id: b.id, type: b.type, el: b.el, i: b.i, j: b.j, lvl: b.lvl, isle: b.isle,
+      gold: b.gold, goldT: b.goldT, slots: b.slots, eggs: b.eggs, breed: b.breed,
+      breedHistory: b.breedHistory, job: b.job,
+      exp: b.exp                                   // отряд, ушедший в вылазку
+    })),
+    obstacles: state.obstacles.map(o => ({ id: o.id, type: o.type, i: o.i, j: o.j, job: o.job, isle: o.isle })),
+    mons: state.mons.map(m => ({
+      id: m.id, kind: m.kind, species: m.species, name: m.name, el: m.el, els: m.els,
+      rarity: m.rarity, isle: m.isle,
+      level: m.level, xp: m.xp, hp: m.hp, home: m.home, src: m.src, base: m.base,
+      loadout: m.loadout                       // четвёрка приёмов, собранная игроком
+    }))
+  };
+}
 function save(state) {
   try {
-    localStorage.setItem(SAVE_KEY, JSON.stringify({
-      // когда игрок был здесь в последний раз: по этой отметке при следующем
-      // запуске считается, что успело произойти без него (game/away.js)
-      seenAt: Date.now(),
-      gold: state.gold, food: state.food, crystals: state.crystals, nid: state.nid,
-      team: state.team, adv: state.adv, dex: state.dex,
-      isle: state.isle, homes: state.homes, profile: state.profile, daily: state.daily,
-      builds: state.builds.map(b => ({
-        id: b.id, type: b.type, el: b.el, i: b.i, j: b.j, lvl: b.lvl, isle: b.isle,
-        gold: b.gold, goldT: b.goldT, slots: b.slots, eggs: b.eggs, breed: b.breed,
-        breedHistory: b.breedHistory, job: b.job,
-        exp: b.exp                                   // отряд, ушедший в вылазку
-      })),
-      obstacles: state.obstacles.map(o => ({ id: o.id, type: o.type, i: o.i, j: o.j, job: o.job, isle: o.isle })),
-      mons: state.mons.map(m => ({
-        id: m.id, kind: m.kind, species: m.species, name: m.name, el: m.el, els: m.els,
-        rarity: m.rarity, isle: m.isle,
-        level: m.level, xp: m.xp, hp: m.hp, home: m.home, src: m.src, base: m.base,
-        loadout: m.loadout                       // четвёрка приёмов, собранная игроком
-      }))
-    }));
+    localStorage.setItem(SAVE_KEY, JSON.stringify(serialize(state)));
   } catch (e) {
     if (warned) return;
     warned = true;
@@ -3364,6 +3396,43 @@ function loadRaw() {
   try { return JSON.parse(localStorage.getItem(SAVE_KEY) || "null") } catch (e) { return null }
 }
 function wipe() { try { localStorage.removeItem(SAVE_KEY) } catch (e) {} }
+
+/* ---------- перенос сохранения между браузерами ----------
+   Файл — тот же самый набор полей, что и в localStorage, плюс дата для
+   человека: restore() в main.js и так собирает мир по кусочкам с запасными
+   значениями на каждое поле, поэтому лишнее поле в файле ему не помешает. */
+
+/** Текст файла сохранения — отдать пользователю на скачивание. */
+function exportSave(state) {
+  return JSON.stringify({ savedAt: new Date().toISOString(), ...serialize(state) }, null, 2);
+}
+
+/**
+ * Разобрать выбранный файл. Возвращает { data } или { error } — проверка
+ * нарочно неглубокая: то же самое дальше проверяет restore() в main.js,
+ * подставляя запасные значения на каждое отсутствующее поле, а здесь нужно
+ * только отсеять «это вообще не то».
+ */
+function parseSave(text) {
+  let d;
+  try { d = JSON.parse(text) }
+  catch (e) { return { error: "Файл повреждён или это не сохранение" } }
+  if (!d || typeof d !== "object" || !Array.isArray(d.builds) || !Array.isArray(d.mons))
+    return { error: "Это не похоже на файл сохранения «Острова Химер»" };
+  return { data: d };
+}
+
+/** Записать разобранное сохранение на диск браузера — вместо текущего. */
+function applySave(data) {
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+    return null;
+  } catch (e) {
+    return /quota|exceed/i.test(e && (e.name + e.message))
+      ? "Память браузера переполнена — освободи место и попробуй снова"
+      : "Не удалось записать сохранение";
+  }
+}
 
 
 /* ===== src/data/rarity.js ===== */
@@ -7990,11 +8059,20 @@ const expeditionTeam = cave =>
    таблички ложились друг на друга, и собственных чудищ не было видно вовсе.
    Разброс раздвинут почти вдвое и по x, и по y — на телефоне вертикали как
    раз хватает с избытком, а на широком окне более просторная расстановка
-   тоже смотрится нормально. */
+   тоже смотрится нормально.
+
+   Самое дальнее место (x:0.035) при первой правке подвинули слишком близко
+   к краю: табличка центрируется на своей точке (translate(-50%,0)) и своей
+   половиной ширины вылезала за левый/правый край экрана — «Грино» на
+   телефоне читалось как «рино», без первой буквы. 0.17 — минимум, при
+   котором половина таблички (98px на телефоне) остаётся на экране даже на
+   самом узком нынешнем телефоне (~320px), а от переднего места (0.230)
+   всё равно достаточно далеко: их разводит уже не x, а y — дальнее место
+   выше на четверть экрана. */
 const SPOTS = [
   { x: 0.230, y: 0.780, s: 1.00 },
   { x: 0.340, y: 0.620, s: 0.92 },
-  { x: 0.035, y: 0.470, s: 0.85 }
+  { x: 0.170, y: 0.470, s: 0.85 }
 ];
 
 /* Высота нижней полки приёмов: её меряет ui/battle.js после каждой отрисовки.
@@ -11651,6 +11729,7 @@ function anyChestReady() {
 
 
 
+
 let profRoot = null;
 
 /* ---------- полоска в шапке ---------- */
@@ -11731,7 +11810,64 @@ function renderProfileWindow() {
     </div>
     <div class="pf-list">${rows}</div>
     <p class="pf-note">Опыт хозяина растёт от работы на острове: стройка и улучшения,
-      расчистка деревьев, вылупление чудищ, кладки в саду и пройденные узлы странствий.</p>`;
+      расчистка деревьев, вылупление чудищ, кладки в саду и пройденные узлы странствий.</p>
+
+    <div class="pf-save">
+      <h3>Сохранение</h3>
+      <p class="pf-note">Скачай файл, чтобы перенести прогресс в другой браузер или на другое
+        устройство, — там его можно будет загрузить обратно вот этой же кнопкой.</p>
+      <div class="rowb">
+        <button class="b sm" id="pfExport">Скачать файл</button>
+        <button class="b sm" id="pfImportPick">Загрузить файл</button>
+      </div>
+      <input type="file" id="pfImportFile" accept=".json,application/json" hidden>
+      <div class="pf-import" id="pfImportInfo" hidden></div>
+    </div>`;
+
+  wireSaveButtons();
+}
+
+/* ---------- скачать / загрузить сохранение ----------
+   Файл — тот же набор полей, что и в localStorage (core/storage.js). Загрузка
+   идёт в два касания: сперва выбранный файл разбирается и показывается, что
+   в нём (уровень, чудища, золото) — так видно, что это точно тот файл,
+   прежде чем нажимать кнопку, которая заменяет текущий прогресс. Сама замена
+   тоже требует подтверждения (arm) — на случай, если ткнули не туда. */
+function wireSaveButtons() {
+  const exportBtn = $("#pfExport");
+  if (exportBtn) exportBtn.onclick = () => {
+    const blob = new Blob([exportSave(S)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `ostrov-himer-save-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    toast("Файл сохранения скачан", "good");
+  };
+
+  const fileInput = $("#pfImportFile");
+  const pick = $("#pfImportPick");
+  const info = $("#pfImportInfo");
+  if (pick) pick.onclick = () => fileInput.click();
+  if (fileInput) fileInput.onchange = async () => {
+    const file = fileInput.files[0];
+    fileInput.value = "";                    // тот же файл можно будет выбрать снова
+    if (!file) return;
+    const { data, error } = parseSave(await file.text());
+    if (error) { toast(error, "bad"); info.hidden = true; return }
+
+    const lvl = (data.profile && data.profile.level) || 1;
+    info.hidden = false;
+    info.innerHTML = `<p>В файле: уровень ${lvl} · чудищ ${data.mons.length}
+        · золота ${fmt(data.gold || 0)}</p>
+      <button class="b sm hot" id="pfImportGo">Загрузить и заменить текущий прогресс</button>`;
+    arm($("#pfImportGo"), "Точно? Текущий прогресс исчезнет", () => {
+      const err = applySave(data);
+      if (err) return toast(err, "bad");
+      location.reload();
+    });
+  };
 }
 function openProfile() {
   if (!profRoot) buildProfileDom();
