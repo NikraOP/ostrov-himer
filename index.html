@@ -2191,6 +2191,22 @@ button,input,select{font:inherit}button{touch-action:manipulation}button:focus-v
 /* То же в профиле: плашка уровня посветлела, а цифра внутри осталась белой. */
 .pf-badge b{color:inherit}
 
+/* ================= линии родства на телефоне =================
+
+   У линии теперь не один исход, а до четырёх, и в строку они не помещаются:
+   скин держит линию в одну полосу (flex-wrap:nowrap, min-width:max-content),
+   поэтому потомки уезжали за правый край, а рядом с короткой парой зияла
+   пустота во всю высоту столбца.
+
+   На узком экране линия складывается: пара сверху, стрелка вниз, потомки под
+   ней. Прокручивать вбок больше нечего. */
+@media(max-width:640px){
+  .lin-line{flex-wrap:wrap; min-width:0}
+  .lin-pair,.lin-outs{min-width:0; flex:1 1 100%}
+  .lin-arrow{flex:1 1 100%; text-align:center; font-size:0; line-height:1}
+  .lin-arrow::after{content:"\2193"; font-size:20px}
+}
+
 </style>
 </head>
 <body>
@@ -5756,6 +5772,28 @@ function buildScreen(b, lift = 0) {
    Порядок родителей не важен: игра ищет линию в обе стороны.
    Если линии для пары нет, скрещивание всё равно работает по общему правилу
    (детёныш идёт в одного из родителей) — схема лишь показывает задуманное.
+
+   ────────────────────────────────────────────────────────────────────────
+   СКОЛЬКО СТАВИТЬ ПРОЦЕНТОВ
+
+   Задуманный потомок не выпадает наверняка: чем он реже, тем меньше его доля,
+   а остаток разбирают монстры попроще. Ориентир такой:
+
+     обычный 100 · редкий 80 · эпический 62 · легендарный 45
+     мифический 32 · богоподобный 25
+
+   Остаток раздаётся видам ступенькой ниже цели, и все они делят стихии с
+   родителями — то есть неудача выглядит как «вышел кто-то из этой же родни»,
+   а не как случайный монстр из другого угла игры. Ниже двадцати не опускаемся:
+   попытка, которая почти никогда не выходит, только злит.
+
+   Пары из двух одинаковых родителей — исключение, у них всегда 100%. Это
+   четыре покупных вида (Харик, Бенри, Грино, Брукс), и на них держится вся
+   цепочка: если и они станут случайными, разводить будет не из чего.
+
+   У каждого исхода своё время кладки: чем проще вышел детёныш, тем раньше
+   вылупится. Двое суток ждать ради редкого — наказание не по делу, а так
+   неудача возвращает родителей в сад через несколько часов.
    ──────────────────────────────────────────────────────────────────────── */
 const LINEAGE = [
   {
@@ -5770,32 +5808,56 @@ const LINEAGE = [
       {
         parents: ["ognebrevn", "grino"],
         ms: 6 * 3600e3,
-        results: [{ species: "latar", chance: 100 }]
+        results: [
+          { species: "latar", chance: 62 },
+          { species: "livena", chance: 23, ms: 4 * 3600e3 },
+          { species: "plantis", chance: 15, ms: 4 * 3600e3 }
+        ]
       },
       {
         parents: ["plantis", "harik"],
         ms: 6 * 3600e3,
-        results: [{ species: "ashira", chance: 100 }]
+        results: [
+          { species: "ashira", chance: 62 },
+          { species: "plantis", chance: 23, ms: 4 * 3600e3 },
+          { species: "harik", chance: 15, ms: 2 * 3600e3 }
+        ]
       },
       {
         parents: ["latar", "grino"],
         ms: 6 * 3600e3,
-        results: [{ species: "meduzum", chance: 100 }]
+        results: [
+          { species: "meduzum", chance: 62 },
+          { species: "livena", chance: 23, ms: 4 * 3600e3 },
+          { species: "grino", chance: 15, ms: 4 * 3600e3 }
+        ]
       },
       {
         parents: ["ashira", "bruks"],
         ms: 12 * 3600e3,
-        results: [{ species: "iskril", chance: 100 }]
+        results: [
+          { species: "iskril", chance: 45 },
+          { species: "floraks", chance: 30, ms: 6 * 3600e3 },
+          { species: "granks", chance: 25, ms: 4 * 3600e3 }
+        ]
       },
       {
         parents: ["latar", "bruks"],
         ms: 12 * 3600e3,
-        results: [{ species: "mossar", chance: 100 }]
+        results: [
+          { species: "mossar", chance: 45 },
+          { species: "akvarok", chance: 30, ms: 6 * 3600e3 },
+          { species: "livena", chance: 25, ms: 4 * 3600e3 }
+        ]
       },
       {
         parents: ["ognebrevn", "latar"],
         ms: 12 * 3600e3,
-        results: [{ species: "riks", chance: 100 }]
+        results: [
+          { species: "riks", chance: 45 },
+          { species: "meduzum", chance: 30, ms: 6 * 3600e3 },
+          { species: "livena", chance: 25, ms: 4 * 3600e3 }
+        ]
       }
     ]
   },
@@ -5811,22 +5873,39 @@ const LINEAGE = [
       {
         parents: ["bruks", "benri"],
         ms: 6 * 3600e3,                     // кладка зреет шесть часов
-        results: [{ species: "bara", chance: 100 }]
+        results: [
+          { species: "bara", chance: 62 },
+          { species: "granks", chance: 23, ms: 4 * 3600e3 },
+          { species: "benri", chance: 15, ms: 2 * 3600e3 }
+        ]
       },
       {
         parents: ["bara", "benri"],
         ms: 6 * 3600e3,
-        results: [{ species: "krator", chance: 100 }]
+        results: [
+          { species: "krator", chance: 62 },
+          { species: "granks", chance: 23, ms: 4 * 3600e3 },
+          { species: "benri", chance: 15, ms: 2 * 3600e3 }
+        ]
       },
       {
         parents: ["ognebrevn", "benri"],
         ms: 6 * 3600e3,
-        results: [{ species: "floraks", chance: 100 }]
+        results: [
+          { species: "floraks", chance: 62 },
+          { species: "plantis", chance: 23, ms: 4 * 3600e3 },
+          { species: "benri", chance: 15, ms: 2 * 3600e3 }
+        ]
       },
       {
         parents: ["kraks", "krator"],
         ms: 24 * 3600e3,
-        results: [{ species: "piroksis", chance: 100 }]
+        results: [
+          { species: "piroksis", chance: 32 },
+          { species: "akvarok", chance: 25, ms: 6 * 3600e3 },
+          { species: "shlaks", chance: 23, ms: 6 * 3600e3 },
+          { species: "granks", chance: 20, ms: 4 * 3600e3 }
+        ]
       }
     ]
   },
@@ -5842,27 +5921,46 @@ const LINEAGE = [
       {
         parents: ["bruks", "grino"],
         ms: 6 * 3600e3,
-        results: [{ species: "kraks", chance: 100 }]
+        results: [
+          { species: "kraks", chance: 62 },
+          { species: "grino", chance: 23, ms: 4 * 3600e3 },
+          { species: "livena", chance: 15, ms: 4 * 3600e3 }
+        ]
       },
       {
         parents: ["kraks", "grino"],
         ms: 6 * 3600e3,
-        results: [{ species: "akvarok", chance: 100 }]
+        results: [
+          { species: "akvarok", chance: 62 },
+          { species: "grino", chance: 23, ms: 4 * 3600e3 },
+          { species: "livena", chance: 15, ms: 4 * 3600e3 }
+        ]
       },
       {
         parents: ["meduzum", "akvarok"],
         ms: 12 * 3600e3,
-        results: [{ species: "riftar", chance: 100 }]
+        results: [
+          { species: "riftar", chance: 45 },
+          { species: "latar", chance: 30, ms: 6 * 3600e3 },
+          { species: "livena", chance: 25, ms: 4 * 3600e3 }
+        ]
       },
       {
         parents: ["plantis", "kraks"],
         ms: 12 * 3600e3,                    // легендарная пара возится вдвое дольше
-        results: [{ species: "fron", chance: 100 }]
+        results: [
+          { species: "fron", chance: 45 },
+          { species: "bara", chance: 30, ms: 6 * 3600e3 },
+          { species: "granks", chance: 25, ms: 4 * 3600e3 }
+        ]
       },
       {
         parents: ["grino", "harik"],
         ms: 4 * 3600e3,
-        results: [{ species: "livena", chance: 100 }]
+        results: [
+          { species: "livena", chance: 80 },
+          { species: "harik", chance: 20, ms: 2 * 3600e3 }
+        ]
       }
     ]
   },
@@ -5878,22 +5976,39 @@ const LINEAGE = [
       {
         parents: ["bruks", "plantis"],
         ms: 4 * 3600e3,
-        results: [{ species: "granks", chance: 100 }]
+        results: [
+          { species: "granks", chance: 80 },
+          { species: "benri", chance: 10, ms: 2 * 3600e3 },
+          { species: "harik", chance: 10, ms: 2 * 3600e3 }
+        ]
       },
       {
         parents: ["bruks", "ognebrevn"],
         ms: 6 * 3600e3,
-        results: [{ species: "shlaks", chance: 100 }]
+        results: [
+          { species: "shlaks", chance: 62 },
+          { species: "granks", chance: 23, ms: 4 * 3600e3 },
+          { species: "benri", chance: 15, ms: 2 * 3600e3 }
+        ]
       },
       {
         parents: ["kraks", "latar"],
         ms: 12 * 3600e3,
-        results: [{ species: "toporn", chance: 100 }]
+        results: [
+          { species: "toporn", chance: 45 },
+          { species: "akvarok", chance: 30, ms: 6 * 3600e3 },
+          { species: "livena", chance: 25, ms: 4 * 3600e3 }
+        ]
       },
       {
         parents: ["mossar", "toporn"],
         ms: 24 * 3600e3,                    // мифического ждёшь сутки
-        results: [{ species: "terrakun", chance: 100 }]
+        results: [
+          { species: "terrakun", chance: 32 },
+          { species: "riftar", chance: 20, ms: 12 * 3600e3 },
+          { species: "akvarok", chance: 25, ms: 6 * 3600e3 },
+          { species: "granks", chance: 23, ms: 4 * 3600e3 }
+        ]
       }
     ]
   },
@@ -5903,16 +6018,27 @@ const LINEAGE = [
     el: "divine",
     lines: [
       /* Богоподобных выводят только через мифических, и ждать их двое суток —
-         это предел, до которого дорастает игра. */
+         это предел, до которого дорастает игра. До цели доходит четверть
+         попыток; остальные возвращаются раньше и кем-то попроще. */
       {
         parents: ["piroksis", "ashira"],
         ms: 48 * 3600e3,
-        results: [{ species: "solmaris", chance: 100 }]
+        results: [
+          { species: "solmaris", chance: 25 },
+          { species: "iskril", chance: 18, ms: 12 * 3600e3 },
+          { species: "floraks", chance: 30, ms: 6 * 3600e3 },
+          { species: "plantis", chance: 27, ms: 4 * 3600e3 }
+        ]
       },
       {
         parents: ["terrakun", "akvarok"],
         ms: 48 * 3600e3,
-        results: [{ species: "abissaron", chance: 100 }]
+        results: [
+          { species: "abissaron", chance: 25 },
+          { species: "riftar", chance: 18, ms: 12 * 3600e3 },
+          { species: "kraks", chance: 30, ms: 6 * 3600e3 },
+          { species: "grino", chance: 27, ms: 4 * 3600e3 }
+        ]
       }
     ]
   },
@@ -5924,8 +6050,8 @@ const LINEAGE = [
         parents: ["harik", "benri"],
         ms: 3 * 3600e3,                     // кладка зреет три часа
         results: [
-          { species: "ognebrevn", chance: 50 },
-          { species: "plantis", chance: 50 }
+          { species: "plantis", chance: 60 },
+          { species: "ognebrevn", chance: 40, ms: 6 * 3600e3 }
         ]
       }
     ]
@@ -6211,6 +6337,26 @@ function breedMsRange(a, b) {
   const list = (lineOf(a, b) || {}).results || [];
   const all = list.length ? list.map(r => breedMs(a, b, r)) : [breedMs(a, b)];
   return { min: Math.min(...all), max: Math.max(...all) };
+}
+
+/**
+ * Что может выйти у этой пары и с какими шансами — для панели сада.
+ * Проценты нормируются, поэтому в схеме они могут и не давать ровно сотню.
+ * Без задуманной линии возвращает null: там работает общее правило.
+ */
+function breedOdds(a, b) {
+  const line = lineOf(a, b);
+  if (!line || !line.results || !line.results.length) return null;
+  const total = line.results.reduce((s, r) => s + (r.chance || 0), 0) || 1;
+  return line.results.map(r => {
+    const sp = speciesOf(r.species);
+    return {
+      species: r.species,
+      name: sp ? sp.name : r.species,
+      chance: Math.round((r.chance || 0) / total * 100),
+      ms: breedMs(a, b, r)
+    };
+  });
 }
 
 /** Можно ли свести этих двоих. Возвращает причину отказа или null. */
@@ -9139,9 +9285,17 @@ function breedingSheet(node, b) {
   const span = ready ? breedMsRange(a, c) : null;
   const when = span ? (span.min === span.max ? tleft(span.min)
     : tleft(span.min) + " – " + tleft(span.max)) : "";
+  /* Шансы показываем прямо здесь, а не только в схеме родства: пару выбирают
+     тут, и решение без процентов не принять. */
+  const odds = ready ? breedOdds(a, c) : null;
+  const исход = !odds
+    ? "Детёныш пойдёт в одного из родителей, а сила будет средней между ними."
+    : odds.length === 1
+      ? `Выйдет ${esc(odds[0].name)} — наверняка.`
+      : `Кто выйдет: ${odds.map(o => `${esc(o.name)} — ${o.chance}%`).join(", ")}.
+         Понять, кто именно, можно по сроку кладки: чем реже детёныш, тем дольше зреет.`;
   const info = ready
-    ? `<div class="empty">Кладка: ${when} — золота не стоит.
-        Детёныш пойдёт в одного из родителей, а сила будет средней между ними.${span.min !== span.max ? " У этой пары исход не один — кто вышел, видно по сроку кладки." : ""}</div>`
+    ? `<div class="empty">Кладка: ${when} — золота не стоит. ${исход}</div>`
     : `<div class="empty">Выбери двух разных монстров. Готовое яйцо отправится
         в башню высиживания — там нужно свободное место.</div>`;
 
