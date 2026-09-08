@@ -11019,6 +11019,10 @@ function openTeamPicker() {
 function renderBattleTeamPicker() {
   const box = $("#bTeam");
   if (!picking) { box.hidden = true; return }
+  // список перерисовывается на каждый выбор — без этого прокрутка каждый раз
+  // прыгала в начало, и второй тап на длинном списке попадал уже не туда
+  const scrolled = box.querySelector(".bteam-card");
+  const scrollTop = scrolled ? scrolled.scrollTop : 0;
   syncTeam();
   const chosen = [...S.team];
   const rows = S.mons.map(m => {
@@ -11042,6 +11046,7 @@ function renderBattleTeamPicker() {
       <div class="brows">${rows || `<div class="empty">Чудищ пока нет — выведи первого в башне.</div>`}</div>
       <div class="rowb"><button class="b go" id="bTeamOk">Готово</button></div>
     </div>`;
+  box.querySelector(".bteam-card").scrollTop = scrollTop;
 
   box.querySelectorAll("[data-mon]").forEach(node => {
     node.onclick = () => {
