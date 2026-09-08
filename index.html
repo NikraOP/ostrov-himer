@@ -2001,6 +2001,84 @@ button.mm-skill:disabled{cursor:default}
 
 </style>
 <style>
+/* ===== css/quests.css ===== */
+/* Ежедневные задания: значок в шапке и полноэкранное окно со списком.
+   Разметку строит src/ui/quests.js, прогресс считает src/game/quests.js.
+
+   Написано через переменные темы (--well, --ink, --line…), а не хардкодом:
+   их переопределяет css/atlas.css, поэтому здесь не нужна отдельная тёмная
+   версия — она подхватится сама, как и у карточки чудища. */
+
+/* ---------- значок в шапке ----------
+   Кнопка несёт классы "pill quest-pill" — фон, рамку и тень даёт общий
+   .pill (как у Чуддекса), здесь только то, что у неё своего: нет числового
+   поля, зато есть бейдж с количеством забираемых наград. */
+.quest-pill{position:relative; padding:4px}
+.quest-ic{
+  width:30px; height:30px; display:grid; place-items:center; font-size:16px;
+  font-style:normal; border-radius:50%;
+  background:linear-gradient(180deg,#FFE9A8,#E8B04A);
+  border:2px solid var(--line); box-shadow:inset 0 2px 0 rgba(255,255,255,.6);
+}
+.quest-badge{
+  position:absolute; top:-5px; right:-5px; min-width:19px; height:19px; padding:0 4px;
+  display:grid; place-items:center; border-radius:999px;
+  background:var(--ember); color:#fff; border:2px solid var(--line);
+  font-size:11px; font-weight:900; box-shadow:0 2px 0 var(--ember-2);
+}
+.quest-badge[hidden]{display:none}
+
+/* ---------- окно ---------- */
+#quests{
+  position:absolute; inset:0; z-index:26; display:none; overflow:auto;
+  padding:64px 12px 16px; background:var(--parch); color:var(--ink);
+  font-family:var(--ui);
+}
+#quests.on{display:block}
+.qt-head{display:flex; align-items:center; gap:10px; max-width:640px; margin:0 auto 12px}
+.qt-head h2{
+  margin:0; font-family:var(--disp); font-size:20px; font-weight:800; letter-spacing:.02em;
+}
+.qt-head .x{margin-left:auto}
+.qt-body{max-width:640px; margin:0 auto; display:grid; gap:12px}
+
+.qt-hint{
+  padding:12px 14px; border-radius:14px; background:var(--well); box-shadow:var(--sunk);
+  font-size:12.5px; font-weight:700; color:var(--ink-2); line-height:1.5;
+}
+
+.qt-list{display:grid; gap:8px}
+.qt-row{
+  display:flex; align-items:center; gap:10px; padding:10px;
+  background:linear-gradient(180deg,#FFFEFA,#FFF3DE); border:2.5px solid var(--line);
+  border-radius:14px; box-shadow:var(--lift-sm);
+}
+.qt-row.ready{border-color:var(--gold-2)}
+.qt-row.done{opacity:.6}
+.qt-ic{
+  width:38px; height:38px; flex:none; display:grid; place-items:center; font-size:19px;
+  border-radius:50%; background:var(--well); box-shadow:var(--sunk);
+}
+.qt-info{flex:1; min-width:0; display:grid; gap:4px}
+.qt-info b{font-family:var(--disp); font-size:13px; font-weight:800}
+.qt-info small{font-size:11px; font-weight:700; color:var(--ink-2)}
+.qt-bar{position:relative; height:7px; border-radius:999px; background:var(--well);
+  box-shadow:var(--sunk); overflow:hidden}
+.qt-bar i{display:block; height:100%; background:linear-gradient(90deg,#FFD873,#F0A93A)}
+.qt-state{
+  font-size:10.5px; font-weight:900; letter-spacing:.04em; text-transform:uppercase;
+  color:var(--ink-2); white-space:nowrap;
+}
+
+@media (max-width:560px){
+  #quests{padding:56px 8px 12px}
+  .qt-head h2{font-size:17px}
+  .qt-row{padding:8px; gap:8px}
+  .qt-ic{width:32px; height:32px; font-size:16px}
+}
+
+</style>
+<style>
 /* ===== css/atlas.css ===== */
 /* ================= Атлас =================
 
@@ -2231,6 +2309,23 @@ button,input,select{font:inherit}button{touch-action:manipulation}button:focus-v
 }
 #sheet .rowb .b:active{box-shadow:none}
 
+/* ================= ежедневные задания =================
+
+   Как и у .dex-ic, .pill сама перекрашивается через общее правило выше, а
+   иконка-медальон внутри — нет: у неё свой золотой градиент, назначенный
+   в quests.css хардкодом, а не переменными. Красим отдельно, той же парой
+   цветов, что и .dex-ic — оба медальона сидят в шапке рядом.
+
+   Строки заданий в панели используют тот же хардкод-градиент, что и плитки
+   приёмов в карточке чудища (.mc-all .mm-skill) — они и задуманы как тот же
+   «пергаментный» элемент, поэтому здесь тот же тёмный рецепт. */
+.quest-ic{background:#2c5157; border:1px solid #698d7f; box-shadow:none}
+.qt-row{background:#163947; border:1px solid #5e8381; color:#e5ede3; box-shadow:none}
+.qt-row.ready{border-color:#edcc86}
+.qt-row.done{opacity:.55}
+.qt-info small{color:#a9c5c6}
+.qt-state{color:#a9c5c6}
+
 </style>
 </head>
 <body>
@@ -2259,6 +2354,8 @@ button,input,select{font:inherit}button{touch-action:manipulation}button:focus-v
            а не действие, и стоять он должен рядом с ресурсами -->
       <button class="pill dex-pill" id="dexBtn" title="Чуддекс — дневник чудищ">
         <i class="dex-ic" aria-hidden="true">🐾</i><span id="dexCount">0/0</span></button>
+      <button class="pill quest-pill" id="questBtn" title="Задания дня">
+        <i class="quest-ic" aria-hidden="true">📋</i><b class="quest-badge" id="questBadge" hidden>0</b></button>
     </div>
 
     <div class="brand">ОСТРОВ ХИМЕР</div>
@@ -3222,7 +3319,7 @@ function save(state) {
       seenAt: Date.now(),
       gold: state.gold, food: state.food, crystals: state.crystals, nid: state.nid,
       team: state.team, adv: state.adv, dex: state.dex,
-      isle: state.isle, homes: state.homes, profile: state.profile,
+      isle: state.isle, homes: state.homes, profile: state.profile, daily: state.daily,
       builds: state.builds.map(b => ({
         id: b.id, type: b.type, el: b.el, i: b.i, j: b.j, lvl: b.lvl, isle: b.isle,
         gold: b.gold, goldT: b.goldT, slots: b.slots, eggs: b.eggs, breed: b.breed,
@@ -4377,6 +4474,7 @@ const S = {
   adv: {},          // странствия: { "остров.узел": {stars, taken} } — см. game/adventure.js
   dex: [],          // Чуддекс: виды, которые хоть раз были у игрока
   profile: { level: 1, xp: 0 },    // стаж хозяина острова: открывает здания и возможности
+  daily: null,      // задания дня — см. game/quests.js
   isle: FIRST_HOME, // на какой из своих островов игрок сейчас смотрит
   homes: { [FIRST_HOME]: true },   // какие острова уже куплены
   nid: 1,           // счётчик id
@@ -6185,9 +6283,187 @@ function lineFor(aId, bId) {
 const PUBLIC_BUILD = true;
 
 
+/* ===== src/data/quests.js ===== */
+/* Ежедневные задания: три несложных дела, которые сбрасываются раз в сутки.
+
+   ────────────────────────────────────────────────────────────────────────
+   ЗАМЫСЕЛ
+
+   У острова и так есть таймеры — логово, кладка, вылазка, но между ними
+   легко забыть про игру на день-другой: ничего не напоминает, что сюда
+   стоит заглянуть именно сегодня. Задания — это явная, короткая причина
+   вернуться: три несложных дела и общий бонус за все три сразу.
+
+   Пул шире, чем нужно на день (девять записей), — так дни не повторяются
+   подряд. «Загляни на остров» стоит в выборке каждый день: это заведомо
+   простое задание, которое закрывается самим фактом входа, — реальная
+   награда «просто за вход», без дополнительного клика.
+
+   kind — метка, по которой game/quests.js засчитывает прогресс. Она должна
+   совпадать со строкой, которую передают в advance(kind) на месте самого
+   действия (кормёжка, сбор золота и так далее) — это единственная связь
+   между заданием и игрой, никаких прямых ссылок друг на друга.
+
+   weight — во сколько раз награда весомее базовой: у простого дела вроде
+   входа он меньше единицы, у такого, что отнимает больше игрового времени
+   (свести пару, собрать экспедицию, трижды победить), — за полтора.
+   ──────────────────────────────────────────────────────────────────────── */
+const QUEST_POOL = [
+  { id: "login", kind: "login", glyph: "☀", weight: 0.6,
+    name: "Загляни на остров", desc: "Просто открой игру — уже готово", goal: 1 },
+  { id: "feed", kind: "feed", glyph: "🍊", weight: 1,
+    name: "Покорми чудищ", desc: "Покорми чудищ 5 раз", goal: 5 },
+  { id: "gold", kind: "gold", glyph: "💰", weight: 0.9,
+    name: "Собери золото", desc: "Забери золото из логова 3 раза", goal: 3 },
+  { id: "harvest", kind: "harvest", glyph: "🌱", weight: 0.9,
+    name: "Собери урожай", desc: "Собери апельсины с фермы 3 раза", goal: 3 },
+  { id: "hatch", kind: "hatch", glyph: "🥚", weight: 1.2,
+    name: "Вылупи чудище", desc: "Вылупи чудище в башне высиживания", goal: 1 },
+  { id: "breed", kind: "breed", glyph: "💞", weight: 1.4,
+    name: "Своди пару", desc: "Забери яйцо из сада разведения", goal: 1 },
+  { id: "expedition", kind: "expedition", glyph: "🧭", weight: 1.4,
+    name: "Собери экспедицию", desc: "Заверши вылазку в пещере", goal: 1 },
+  { id: "battle", kind: "battle", glyph: "⚔", weight: 1.6,
+    name: "Победи в странствиях", desc: "Победи в бою 3 раза", goal: 3 },
+  { id: "buy", kind: "buy", glyph: "🛒", weight: 1.2,
+    name: "Пополни остров", desc: "Купи яйцо в лавке", goal: 1 }
+];
+
+/**
+ * Награда за одно задание. Растёт вместе с уровнем хозяина острова — по той
+ * же логике, что и остальные формулы в data/balance.js: чем позже игра, тем
+ * весомее должна быть мелкая награда, иначе к середине игры она станет
+ * незаметной на фоне обычного дохода.
+ *   лёгкое (вход) 1 ур.    →  22 золота, 5 апельсинов
+ *   тяжёлое (бой×3) 1 ур.  →  59 золота, 15 апельсинов
+ *   тяжёлое (бой×3) 20 ур. →  283 золота, 62 апельсина
+ */
+const questReward = (t, level) => ({
+  gold: Math.round((30 + level * 7) * t.weight),
+  food: Math.round((8 + level * 1.6) * t.weight)
+});
+
+/**
+ * Бонус за все три задания разом. Кристалл здесь один — не для того, чтобы
+ * заменить боссов странствий (те дают по десять), а чтобы у игрока, который
+ * сегодня не дошёл до боя, тоже набегала тонкая струйка кристаллов.
+ */
+const bonusReward = level => ({
+  gold: Math.round(80 + level * 12),
+  food: Math.round(20 + level * 3),
+  crystals: 1
+});
+
+
+/* ===== src/game/quests.js ===== */
+/* Ежедневные задания: состояние живёт в S.daily, шаблоны — в data/quests.js.
+
+   Три задания в день, выбранные из общего пула, плюс общий бонус за все три.
+   День сбрасывается по местным календарным суткам: как только меняется
+   dayKey(), при первом же обращении (advance, dailyQuests, questsReady —
+   все они сами зовут ensureDaily) старый набор тихо заменяется новым. Особый
+   таймер для этого не нужен: достаточно того, что игра и так спрашивает
+   про задания на каждой отрисовке шапки. */
+
+
+
+const questById = id => QUEST_POOL.find(q => q.id === id);
+
+/** Ключ календарного дня по местным часам игрока. */
+const dayKey = (t = Date.now()) => {
+  const d = new Date(t);
+  return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
+};
+
+/** Перетасовка Фишера — Йетса: без повторов и без смещения к концу списка. */
+function shuffled(list) {
+  const a = list.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/**
+ * Открыть сегодняшний набор, если он ещё не открыт. «Загляни на остров»
+ * входит в список всегда и сразу отмечена выполненной: сам факт того, что
+ * это читается, и есть посещение острова сегодня.
+ */
+function ensureDaily() {
+  const key = dayKey();
+  if (S.daily && S.daily.date === key) return;
+  const rest = QUEST_POOL.filter(q => q.id !== "login");
+  const chosen = [questById("login"), ...shuffled(rest).slice(0, 2)];
+  S.daily = {
+    date: key,
+    quests: chosen.map(t => ({
+      id: t.id, have: t.id === "login" ? t.goal : 0, need: t.goal, claimed: false
+    })),
+    bonusClaimed: false
+  };
+}
+
+/**
+ * Прогресс по действию. kind — та же метка, что и в шаблоне (data/quests.js).
+ * Молча ничего не делает, если сегодня такого задания нет, — вызывать
+ * отовсюду, где что-то посчитанное происходит, можно без оглядки на то,
+ * выпало оно сегодня или нет.
+ */
+function advance(kind, n = 1) {
+  ensureDaily();
+  let changed = false;
+  for (const q of S.daily.quests) {
+    if (q.claimed || q.have >= q.need) continue;
+    const t = questById(q.id);
+    if (!t || t.kind !== kind) continue;
+    q.have = Math.min(q.need, q.have + n);
+    changed = true;
+  }
+  if (changed) { bus.emit("ui:top"); persist() }
+}
+
+/** Задания на сегодня вместе с их шаблонами — то, что рисует панель. */
+function dailyQuests() {
+  ensureDaily();
+  return S.daily.quests.map(q => ({ ...q, t: questById(q.id) }));
+}
+
+/** Сколько наград готовы к тому, чтобы их забрали, — бейдж на кнопке. */
+function questsReady() {
+  ensureDaily();
+  return S.daily.quests.filter(q => q.have >= q.need && !q.claimed).length;
+}
+
+/**
+ * Забрать награду за задание. Возвращает { reward, bonus } (bonus — null,
+ * если это не последнее из трёх) или null, если забирать нечего.
+ */
+function claimQuest(id) {
+  ensureDaily();
+  const q = S.daily.quests.find(x => x.id === id);
+  if (!q || q.have < q.need || q.claimed) return null;
+
+  const t = questById(id);
+  const reward = questReward(t, profileLevel());
+  S.gold += reward.gold; S.food += reward.food;
+  q.claimed = true;
+
+  let bonus = null;
+  if (!S.daily.bonusClaimed && S.daily.quests.every(x => x.claimed)) {
+    bonus = bonusReward(profileLevel());
+    S.gold += bonus.gold; S.food += bonus.food; S.crystals += bonus.crystals;
+    S.daily.bonusClaimed = true;
+  }
+  bus.emit("ui:top"); persist();
+  return { reward, bonus };
+}
+
+
 /* ===== src/game/tower.js ===== */
 /* Башня высиживания: в свободное место кладут яйцо, через таймер оно
    вылупляется первым этапом монстра. Мест столько, каков уровень башни. */
+
 
 
 
@@ -6299,6 +6575,7 @@ function hatch(b, slot) {
   bus.emit("toast", { text: m.name + " вылупился!", kind: "good" });
   if (дом) pointToHomes([дом.id], 6000);      // стрелка показывает, куда въехал
   addProfileXp(PROFILE_XP.hatch);
+  advance("hatch");
   persist();
   bus.emit("sheet:mon", m);
   return m;
@@ -6322,6 +6599,7 @@ const hatchableSpecies = () =>
    Так же, как в играх этого жанра: сад только готовит яйцо, а места под яйца
    считает башня. Поэтому здесь нет ни одного своего таймера высиживания —
    готовое яйцо просто передаётся в tower.startEgg(). */
+
 
 
 
@@ -6482,6 +6760,7 @@ function takeEgg(garden) {
 
   garden.breed = null;
   addProfileXp(PROFILE_XP.breed);
+  advance("breed");
   persist();
   bus.emit("toast", {
     text: "Яйцо от пары отправлено в башню · " + ELEMENTS[child.el].name,
@@ -6512,6 +6791,7 @@ function cancelBreeding(garden) {
 /* ===== src/game/economy.js ===== */
 /* Экономика: золото копится в логовах, апельсины растут на фермах,
    кормёжка поднимает уровень. Тут же — поведение монстров на острове. */
+
 
 
 
@@ -6643,6 +6923,7 @@ function collect({ b, kind, x, y, slot }) {
     floatText(x, y, "+" + fmt(total), "#A6E87A");
     burst(x, y, "#6FC93F", 18, 0.9);
   }
+  advance(kind === "gold" ? "gold" : "harvest");
   bus.emit("ui:top"); bus.emit("ui:sheet"); persist();
 }
 
@@ -6694,6 +6975,7 @@ function feed(m) {
     burst(s.x, s.y, "#6FC93F", 14, 0.7);
     if (ups) floatText(s.x, s.y - 10, "уровень " + m.level, "#FFD873");
   }
+  advance("feed");
   bus.emit("ui:top"); bus.emit("ui:sheet"); persist();
   return ups ? { levelUp: m.level } : null;
 }
@@ -7533,6 +7815,7 @@ const elementBonus = сколько =>
 
 
 
+
 /** Готовые пещеры на всех островах. */
 const caves = () => S.builds.filter(b => b.type === "cave" && isReady(b));
 
@@ -7622,6 +7905,7 @@ function collectExpedition(cave) {
   addProfileXp(PROFILE_XP.expedition ? PROFILE_XP.expedition(exp) : 20);
 
   cave.exp = null;
+  advance("expedition");
   bus.emit("ui:top"); bus.emit("ui:sheet"); persist();
   bus.emit("toast", {
     text: "Отряд вернулся: " + [
@@ -8472,6 +8756,7 @@ bus.on("toast", ({ text, kind }) => toast(text, kind));
 
 
 
+
 /** Что продаём. Новое здание появится здесь автоматически, если дописать цену. */
 function shopItems() {
   const items = [
@@ -8620,6 +8905,7 @@ function buyMonster(id, sp, cost) {
   const err = startEgg({ kind: "species", species: id, name: sp.name, el: sp.el }, sp.eggMs || 60e3);
   if (err) return toast(err, "bad");
   S.gold -= cost;
+  advance("buy");
   bus.emit("ui:top"); persist();
   $("#shop").classList.remove("on");
   toast(sp.name + ": яйцо в башне", "good");
@@ -11099,6 +11385,7 @@ function nodeLevel(node) {
 
 
 
+
 /** Ключ узла в прогрессе. Один на всю игру — по нему сверяются все экраны. */
 const ADV_ID = (island, n) => `${island}.${n}`;
 
@@ -11278,6 +11565,7 @@ function finishNode(id, stars) {
   // стаж хозяина острова растёт и от странствий, у босса — заметно щедрее
   const lvl = nodeLevel(node);
   addProfileXp(node.boss ? PROFILE_XP.boss(lvl) : PROFILE_XP.node(lvl));
+  advance("battle");     // засчитывается любая победа, не только первая
   return { stars: rec.stars, gained: rec.stars - before, sum };
 }
 
@@ -11455,6 +11743,110 @@ function initProfile() {
 
   addEventListener("keydown", e => { if (e.key === "Escape" && profileOpen()) closeProfile() });
   renderProfile();
+}
+
+
+/* ===== src/ui/quests.js ===== */
+/* Ежедневные задания: значок в шапке и окно со списком на сегодня.
+
+   Весь прогресс живёт в game/quests.js — здесь только показ и кнопка
+   «забрать». Бонус за все три задания посчитан заранее и виден подсказкой
+   ещё до того, как игрок начал их закрывать: понятно, ради чего стараться. */
+
+
+
+
+
+
+let questRoot = null;
+
+/* ---------- значок в шапке ---------- */
+function renderQuestBadge() {
+  const b = $("#questBadge");
+  if (!b) return;
+  const n = questsReady();
+  b.textContent = n;
+  b.hidden = n < 1;
+}
+
+/* ---------- окно ---------- */
+
+function buildQuestDom() {
+  questRoot = document.createElement("div");
+  questRoot.id = "quests";
+  questRoot.innerHTML = `
+    <div class="qt-head">
+      <h2>Задания на сегодня</h2>
+      <button class="b sm x" id="qtClose">Закрыть</button>
+    </div>
+    <div class="qt-body" id="qtBody"></div>`;
+  document.getElementById("app").append(questRoot);
+  $("#qtClose").onclick = closeQuests;
+  questRoot.addEventListener("click", e => { if (e.target === questRoot) closeQuests() });
+}
+
+function renderQuestWindow() {
+  const list = dailyQuests();
+  const allClaimed = list.every(q => q.claimed);
+  const bonus = bonusReward(profileLevel());
+
+  const rows = list.map(q => {
+    const t = q.t;
+    const pct = Math.min(100, q.have / q.need * 100);
+    const ready = q.have >= q.need && !q.claimed;
+    return `<div class="qt-row ${q.claimed ? "done" : ready ? "ready" : ""}">
+      <span class="qt-ic">${t.glyph}</span>
+      <div class="qt-info">
+        <b>${esc(t.name)}</b>
+        <div class="qt-bar"><i style="width:${pct}%"></i></div>
+        <small>${esc(t.desc)} · ${q.have} / ${q.need}</small>
+      </div>
+      ${q.claimed
+        ? `<span class="qt-state">получено</span>`
+        : `<button class="b sm ${ready ? "gold" : ""}" data-claim="${t.id}" ${ready ? "" : "disabled"}>забрать</button>`}
+    </div>`;
+  }).join("");
+
+  $("#qtBody").innerHTML = `
+    <div class="qt-hint">${allClaimed
+      ? "Задания на сегодня закрыты — новые придут завтра."
+      : `Собери все три и получишь ещё: +${fmt(bonus.gold)} золота, +${fmt(bonus.food)}
+         апельсинов, ${bonus.crystals} кристалл.`}</div>
+    <div class="qt-list">${rows}</div>`;
+
+  $$("#quests [data-claim]").forEach(btn => btn.onclick = () => {
+    const r = claimQuest(btn.dataset.claim);
+    if (!r) return;
+    const bits = [
+      r.reward.gold ? "+" + fmt(r.reward.gold) + " золота" : "",
+      r.reward.food ? "+" + fmt(r.reward.food) + " апельсинов" : ""
+    ].filter(Boolean).join(", ");
+    toast(bits, "good");
+    if (r.bonus) setTimeout(() => toast(
+      "Все задания дня выполнены! +" + fmt(r.bonus.gold) + " золота, +" + fmt(r.bonus.food)
+        + " апельсинов, " + r.bonus.crystals + " кристалл", "good"), 600);
+    renderQuestWindow();
+    renderQuestBadge();
+  });
+}
+function openQuests() {
+  if (!questRoot) buildQuestDom();
+  renderQuestWindow();
+  questRoot.classList.add("on");
+  bus.emit("sheet:close");
+}
+function closeQuests() {
+  if (questRoot) questRoot.classList.remove("on");
+}
+const questsOpen = () => !!(questRoot && questRoot.classList.contains("on"));
+function initQuests() {
+  if (!questRoot) buildQuestDom();
+  const btn = $("#questBtn");
+  if (btn) btn.onclick = () => (questsOpen() ? closeQuests() : openQuests());
+  bus.on("ui:top", renderQuestBadge);
+  bus.on("battle:start", closeQuests);
+  addEventListener("keydown", e => { if (e.key === "Escape" && questsOpen()) closeQuests() });
+  renderQuestBadge();
 }
 
 
@@ -12145,6 +12537,7 @@ function initAdventure() {
 
 
 
+
 /* ---------- загрузка сохранения или новая игра ---------- */
 let seenAt = 0;                     // когда игрок заходил в прошлый раз
 
@@ -12160,6 +12553,7 @@ function restore() {
   S.adv = d.adv || {};
   S.dex = d.dex || [];
   S.profile = Object.assign({ level: 1, xp: 0 }, d.profile || {});
+  S.daily = d.daily || null;  // задания дня; если пусто или устарело — game/quests.js откроет новые сам
   // острова: старое сохранение знало только первый, поэтому всё лежащее без
   // метки остаётся на нём, а купленные острова восстанавливаются как есть
   S.homes = Object.assign({ [FIRST_HOME]: true }, d.homes || {});
@@ -12423,6 +12817,7 @@ async function boot() {
   initChuddex();
   initIsles();
   initProfile();
+  initQuests();
   initAdmin();
   initHints();
   initWelcome();
