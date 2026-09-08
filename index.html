@@ -9428,7 +9428,7 @@ function initModals() {
         <div class="upgrade-levels"><b>${b.lvl}</b><i>→</i><b>${next.lvl}</b></div>
         <div class="upgrade-stat"><small>${metric}</small><strong>${before} <em>→</em> ${after}</strong></div>
         <p>${BUILDINGS[b.type].desc}</p></div></div>`;
-    $("#upgradeConfirm").innerHTML = `Улучшить · ${up.cost} <img class="ic2" src="${ASSET_SRC.gold}" alt="">`;
+    $("#upgradeConfirm").innerHTML = `<img class="bt-ic" src="${ASSET_SRC.btnUpgrade}" alt="">Улучшить · ${up.cost} <img class="ic2" src="${ASSET_SRC.gold}" alt="">`;
     openModal("mUpgrade");
   });
   $("#upgradeConfirm").onclick = () => {
