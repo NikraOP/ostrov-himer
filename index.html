@@ -2207,6 +2207,30 @@ button,input,select{font:inherit}button{touch-action:manipulation}button:focus-v
   .lin-arrow::after{content:"\2193"; font-size:20px}
 }
 
+/* ================= нижний ряд кнопок в панелях =================
+
+   «Переместить», «Снести», «Улучшить» и прочее живут в #sheet .rowb, и там
+   от прежней палитры остался ярко-голубой градиент. Селектор `#sheet .rowb .b`
+   специфичнее скинового `.b`, поэтому перекраска до него не доходила: ряд
+   светился бирюзой на тёмной бумаге во всех панелях сразу.
+
+   Повторяем те же три вида кнопок, что скин задаёт для `.b`: обычная, золотая
+   для главного действия и тёмно-красная для опасного. */
+#sheet .rowb{background:#08202cb3; border:1px solid #4f747866}
+#sheet .rowb .b{
+  background:linear-gradient(#315861,#1b3d48); border-color:#779797; color:#f8f6e9;
+  text-shadow:none; box-shadow:inset 0 1px #ffffff20,0 3px 0 #061c26;
+}
+#sheet .rowb .b.go,#sheet .rowb .b.gold{
+  background:linear-gradient(#f2dca3,#d9b365); border-color:#ffedbb; color:#302919;
+  text-shadow:none; box-shadow:inset 0 1px #fff8,0 3px 0 #73572b;
+}
+#sheet .rowb .b.hot{
+  background:linear-gradient(#a45e54,#783e3c); border-color:#cb9281; color:#fff5ec;
+  text-shadow:none;
+}
+#sheet .rowb .b:active{box-shadow:none}
+
 </style>
 </head>
 <body>
@@ -7516,6 +7540,13 @@ const caves = () => S.builds.filter(b => b.type === "cave" && isReady(b));
 const expeditionsFor = cave =>
   EXPEDITIONS.filter(e => e.need <= profileLevel() && e.tier <= (cave.lvl || 1));
 
+/**
+ * Сколько вылазок открыто пещере такого уровня — без оглядки на уровень
+ * хозяина острова. Нужно окну улучшения: там показывают, что даст следующий
+ * уровень самой пещеры, а не что игрок уже дорос открыть.
+ */
+const caveDepth = lvl => EXPEDITIONS.filter(e => e.tier <= (lvl || 1)).length;
+
 /** Чудище сейчас в походе — значит, занято. */
 const onExpedition = m =>
   !!m && S.builds.some(b => b.exp && (b.exp.mons || []).includes(m.id));
@@ -9432,6 +9463,7 @@ const onCave = (sel, fn) => { const n = el().querySelector(sel); if (n) n.onclic
 
 function caveSheet(node, b) {
   const списки = expeditionsFor(b);
+  const up = upgradeOf(b);
 
   if (b.exp) {
     const exp = expeditionById(b.exp.id) || { name: "Вылазка", els: [] };
@@ -9461,6 +9493,7 @@ function caveSheet(node, b) {
             : `<button class="b gold" data-act="exp-rush">Поторопить · ${expRushCrystals(b)}
                  <img class="ic2" src="${ASSET_SRC.crystal}" alt=""></button>
                <button class="b sm" data-act="exp-cancel">Отозвать</button>`}
+          ${up ? `<button class="b" data-act="upgrade">Улучшить · ${fmtShort(up.cost)} ${gold}</button>` : ""}
           <button class="b sm" data-act="move">Переместить</button>
           <button class="b sm" data-act="sell">Снести</button>
         </div>`;
@@ -9483,6 +9516,7 @@ function caveSheet(node, b) {
         : "Вылазки откроются с уровнем хозяина острова."}</div>
       <div class="rowb">
         ${списки.length ? `<button class="b go big" data-act="exp-list">Выбрать вылазку</button>` : ""}
+        ${up ? `<button class="b" data-act="upgrade">Улучшить · ${fmtShort(up.cost)} ${gold}</button>` : ""}
         <button class="b sm" data-act="move">Переместить</button>
         <button class="b sm" data-act="sell">Снести</button>
       </div>`;
@@ -9708,6 +9742,7 @@ function attachTips(root, resolve) {
 
 
 
+
 /* Чем занят приём — короткая подпись под названием. */
 const SKILL_KIND = { damage: "урон", heal: "лечение", shield: "щит", stun: "оглушение", guard: "защита" };
 
@@ -9765,11 +9800,16 @@ function initModals() {
     upgradeTarget = b;
     const next = { ...b, lvl: b.lvl + 1 };
     const key = spriteOf(next);
-    const before = b.type === "habitat"
-      ? habitatLevels(b.el)[b.lvl - 1].cap : slotsOf(b);
-    const after = b.type === "habitat"
-      ? (habitatLevels(b.el)[next.lvl - 1] || {}).cap : slotsOf(next);
-    const metric = b.type === "habitat" ? "мест для чудищ" : b.type === "tower" ? "мест для яиц" : "грядок";
+    /* Чем меряется польза от уровня, у каждого здания своё. Пещера ведёт одну
+       вылазку и на пятом уровне — растёт у неё не число мест, а глубина: на
+       каждом уровне открываются вылазки подальше и подороже. */
+    const мера = {
+      habitat: ["мест для чудищ", () => habitatLevels(b.el)[b.lvl - 1].cap,
+                () => (habitatLevels(b.el)[next.lvl - 1] || {}).cap],
+      tower:   ["мест для яиц", () => slotsOf(b), () => slotsOf(next)],
+      cave:    ["вылазок открыто", () => caveDepth(b.lvl), () => caveDepth(next.lvl)]
+    }[b.type] || ["грядок", () => slotsOf(b), () => slotsOf(next)];
+    const metric = мера[0], before = мера[1](), after = мера[2]();
     $("#upgradeTitle").textContent = `Улучшить: ${BUILDINGS[b.type].name}`;
     $("#upgradeBody").innerHTML = `<div class="upgrade-layout">
       <div class="upgrade-preview"><span>УРОВЕНЬ ${next.lvl}</span>
