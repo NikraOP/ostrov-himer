@@ -10271,6 +10271,15 @@ function breedingHistoryView(node, b) {
    Карточка родителя зелёная, если такое чудище у тебя есть; кнопка «Скрестить»
    работает только когда есть оба — она сводит пару прямо в этом саду. */
 function lineageView(node, b) {
+  /* Экран перерисовывается не только по клику: секундный тик листа задевает
+     и его, если в этом же саду тем временем зреет кладка. node.innerHTML
+     каждый раз пересоздаёт .lin-tabs заново, и прокрутка обнулялась —
+     на телефоне, где вкладки идут в строку, это выглядело как «само
+     возвращает в начало» и не давало домотать до дальних вкладок. Прокрутку
+     запоминаем до перерисовки и возвращаем после. */
+  const prevTabs = node.querySelector(".lin-tabs"), tabsScroll = prevTabs ? prevTabs.scrollLeft : 0;
+  const prevBody = node.querySelector(".lin-body"), bodyScroll = prevBody ? prevBody.scrollTop : 0;
+
   const tabs = LINEAGE;
   const current = tabs.find(t => t.id === S.sheet.lineageTab) || tabs[0];
 
@@ -10322,6 +10331,8 @@ function lineageView(node, b) {
         <div class="lin-body">${lines || `<div class="empty">В этой вкладке пока нет линий — добавь их в data/lineage.js.</div>`}</div>
       </div>
       <div class="rowb"><button class="b sm" data-act="back-lineage">Назад</button></div>`;
+  node.querySelector(".lin-tabs").scrollLeft = tabsScroll;
+  node.querySelector(".lin-body").scrollTop = bodyScroll;
 
   $$("#sheet [data-lin-tab]").forEach(x =>
     x.onclick = () => { S.sheet.lineageTab = x.dataset.linTab; render() });
