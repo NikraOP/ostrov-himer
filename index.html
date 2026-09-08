@@ -2092,6 +2092,83 @@ button.mm-skill:disabled{cursor:default}
 
 </style>
 <style>
+/* ===== css/grow.css ===== */
+/* Три карточки из src/ui/grow.js: что посадить (сетка сортов), что растёт
+   (картинка + таймер + поторопить/собрать) и что вылупилось.
+
+   Написано через переменные темы, как и css/quests.css — тёмный атласный
+   скин подхватывает их сам, отдельная тёмная версия не нужна. */
+
+/* ---------- что растёт: ферма и башня ---------- */
+.gr-card{display:flex; gap:14px; align-items:center; margin-bottom:4px}
+.gr-art{
+  width:104px; height:104px; flex:none; display:grid; place-items:center;
+  border-radius:16px; background:var(--well); box-shadow:var(--sunk);
+}
+.gr-art img{width:78%; height:78%; object-fit:contain}
+.gr-glyph{font-size:44px; line-height:1}
+.gr-info{flex:1; min-width:0; display:grid; gap:7px}
+.gr-name{font-family:var(--disp); font-size:16px; font-weight:800}
+.gr-what{font-size:12.5px; font-weight:800; color:var(--ink-2); display:flex;
+  align-items:center; gap:6px; flex-wrap:wrap}
+.gr-what .el-ic{width:20px; height:20px}
+.gr-ready{
+  font-family:var(--disp); font-size:15px; font-weight:800; color:#2E7D32;
+}
+.gr-bar{position:relative; height:12px; border-radius:999px; background:var(--well);
+  box-shadow:var(--sunk); overflow:hidden}
+.gr-bar i{display:block; height:100%; background:linear-gradient(90deg,#FFD873,#F0A93A)}
+.gr-left{display:flex; align-items:center; gap:6px; font-size:12px; font-weight:800; color:var(--ink-2)}
+.gr-left i{font-style:normal}
+.gr-actions{margin-top:2px}
+@media (max-width:560px){
+  .gr-card{flex-direction:column; text-align:center}
+  .gr-what{justify-content:center}
+  .gr-left{justify-content:center}
+}
+
+/* ---------- что посадить: сетка сортов ---------- */
+.pk-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin:8px 0}
+.pk-card{
+  display:grid; gap:8px; padding:10px; border-radius:14px; text-align:left;
+  font-family:inherit; cursor:pointer;
+  background:linear-gradient(180deg,var(--parch),var(--parch-2));
+  border:2.5px solid var(--line); box-shadow:var(--lift-sm);
+  transition:transform .1s;
+}
+.pk-card:hover{transform:translateY(-2px)}
+.pk-card:disabled{opacity:.5; cursor:not-allowed; transform:none}
+.pk-head{font-family:var(--disp); font-size:12.5px; font-weight:800}
+.pk-row{display:flex; align-items:center; gap:8px}
+.pk-art{
+  width:52px; height:52px; flex:none; display:grid; place-items:center;
+  border-radius:11px; background:var(--well); box-shadow:var(--sunk);
+}
+.pk-art img{width:76%; height:76%; object-fit:contain}
+.pk-reward{font-size:12px; font-weight:900; color:var(--ink)}
+.pk-foot{display:flex; align-items:center; justify-content:space-between;
+  font-size:11px; font-weight:800; color:var(--ink-2)}
+.pk-time{display:flex; align-items:center; gap:4px}
+.pk-time i{font-style:normal}
+.pk-cost{display:flex; align-items:center; gap:3px; color:var(--ink)}
+.pk-cost .ic2{width:16px; height:16px}
+@media (max-width:560px){ .pk-grid{grid-template-columns:1fr} }
+
+/* ---------- вылупилось ---------- */
+.hatch-modal{text-align:center}
+.htc-card{display:grid; gap:8px; justify-items:center; margin-bottom:10px}
+.htc-art{
+  width:150px; height:150px; display:grid; place-items:center;
+  background:radial-gradient(62% 62% at 50% 60%, rgba(255,255,255,.55), rgba(255,255,255,0) 72%);
+}
+.htc-art img{width:100%; height:100%; object-fit:contain}
+.htc-name{font-family:var(--disp); font-size:18px; font-weight:800;
+  display:flex; align-items:center; justify-content:center; gap:8px}
+.htc-els{display:flex; align-items:center; justify-content:center; gap:6px}
+.hatch-modal .rowb{justify-content:center}
+
+</style>
+<style>
 /* ===== css/atlas.css ===== */
 /* ================= Атлас =================
 
@@ -2363,6 +2440,17 @@ button,input,select{font:inherit}button{touch-action:manipulation}button:focus-v
 .pf-import{border-top-color:#4a6d68}
 .pf-import p{color:#adc7c7}
 
+/* ================= .crop (список видов яйца в башне) =================
+
+   Тот же хардкод-градиент светлой карточки, что уже был у .mc-slot/.mm-skill
+   до патча выше, — здесь просто пропустили, когда красили остальное.
+   Список видов для яйца (species-view в ui/sheets.js) так и оставался
+   светлой карточкой на тёмном фоне. */
+.crop{background:#163947; border:1px solid #5e8381; color:#e5ede3; box-shadow:none}
+.crop .d{color:#a9c5c6}
+.crop .price{color:#edcc86}
+.crop.no{opacity:.6}
+
 </style>
 </head>
 <body>
@@ -2447,6 +2535,27 @@ button,input,select{font:inherit}button{touch-action:manipulation}button:focus-v
     </div>
   </div>
   <div class="modal monster-modal" id="mMonster" style="max-width:860px"><h3 id="monsterModalTitle">Чудище</h3><div id="monsterModalBody"></div><div class="foot"><button class="b" data-close>Назад</button></div></div>
+
+  <!-- Что растёт: плантация на ферме или яйцо в башне — одна и та же карточка,
+       см. src/ui/grow.js -->
+  <div class="modal grow-modal" id="mGrow" style="max-width:520px">
+    <h3 id="growTitle">Растёт</h3>
+    <div id="growBody"></div>
+    <div class="foot"><button class="b" data-close>Закрыть</button></div>
+  </div>
+
+  <!-- Выбор, что посадить: сетка сортов фермы -->
+  <div class="modal pick-modal" id="mPick" style="max-width:640px">
+    <h3 id="pickTitle">Что посадить</h3>
+    <div id="pickBody"></div>
+    <div class="foot"><button class="b" data-close>Закрыть</button></div>
+  </div>
+
+  <!-- Вылупилось: короткая карточка нового чудища перед полной карточкой -->
+  <div class="modal hatch-modal" id="mHatched" style="max-width:460px">
+    <h3>Новое чудище!</h3>
+    <div id="hatchedBody"></div>
+  </div>
 
   <div class="modal" id="mHelp" style="max-width:460px">
     <h3>Как играть</h3>
@@ -3921,12 +4030,16 @@ const BUILDINGS = {
   },
   farm: {
     size: 2, name: "Апельсиновая ферма", cost: 120, buildMs: 30e3,
-    desc: "Растит апельсины. Чем выше уровень, тем больше грядок и сортов.",
+    desc: "Растит апельсины. Одна грядка, зато чем выше уровень, тем щедрее сорта.",
     sprites: ["farm1", "farm2", "farm3"],
+    /* Грядка всегда одна — больше плантаций одновременно означает ещё одну
+       ферму, а не более высокий уровень (тот же приём, что и с бараками).
+       Уровень при этом не бесполезен: он открывает более дорогие и
+       урожайные сорта (см. tier в data/crops.js). */
     levels: [
-      { slots: 2, up: 5000 },        // up — цена перехода на следующий уровень
-      { slots: 3, up: 800000 },
-      { slots: 4, up: 0 }
+      { slots: 1, up: 5000 },        // up — цена перехода на следующий уровень
+      { slots: 1, up: 800000 },
+      { slots: 1, up: 0 }
     ],
     upMs: [0, 5 * 60e3, 60 * 60e3]   // сколько строитель возится с улучшением
   },
@@ -6655,12 +6768,13 @@ function hatch(b, slot) {
   const дом = homeOf(m);
   const s = buildScreen(дом || b);
   burst(s.x, s.y, (ELEMENTS[m.el] || {}).color || "#FFE0A8", 24, 1.2);
-  bus.emit("toast", { text: m.name + " вылупился!", kind: "good" });
   if (дом) pointToHomes([дом.id], 6000);      // стрелка показывает, куда въехал
   addProfileXp(PROFILE_XP.hatch);
   advance("hatch");
   persist();
-  bus.emit("sheet:mon", m);
+  // карточку со статами открывать рано: сперва короткая карточка «вылупилось!»
+  // (ui/grow.js), с неё же можно сразу продать, если чудище не понравилось
+  bus.emit("monster:hatched", m);
   return m;
 }
 
@@ -9129,9 +9243,506 @@ function initShop() {
 }
 
 
+/* ===== src/ui/tip.js ===== */
+/* Всплывающая подсказка: подробный разбор того, на что навёл.
+
+   Одна на всю игру: панелька живёт в углу #app и переезжает к тому месту, где
+   курсор. Мышью — по наведению, пальцем — по долгому нажатию: на телефоне
+   иначе никак, а знать, что делает приём, нужно и там.
+
+   Содержимое приходит списком строк (см. explain в data/abilities.js) —
+   модуль ничего не знает ни про приёмы, ни про бой. */
+
+let box = null, holdTimer = 0;
+
+function ensure() {
+  if (box) return box;
+  box = document.createElement("div");
+  box.id = "tip";
+  document.getElementById("app").append(box);
+  return box;
+}
+
+/** Показать подсказку рядом с прямоугольником rect. */
+function showTip(rect, title, lines) {
+  const t = ensure();
+  t.innerHTML = `<b>${esc(title)}</b>` +
+    (lines || []).map(l => `<span>${esc(l)}</span>`).join("");
+  t.classList.add("on");
+
+  // сперва показываем, потом меряем: до этого размеры нулевые
+  const w = t.offsetWidth, h = t.offsetHeight, m = 8;
+  let x = rect.left + rect.width / 2 - w / 2;
+  let y = rect.top - h - m;
+  if (y < m) y = rect.bottom + m;                       // не влезла сверху — снизу
+  x = Math.max(m, Math.min(innerWidth - w - m, x));
+  y = Math.max(m, Math.min(innerHeight - h - m, y));
+  t.style.left = x + "px";
+  t.style.top = y + "px";
+}
+function hideTip() {
+  clearTimeout(holdTimer);
+  if (box) box.classList.remove("on");
+}
+
+/**
+ * Развесить подсказки внутри box: на каждый элемент с [data-tip] зовётся
+ * resolve(el) и должен вернуть { title, lines } либо ничего.
+ */
+function attachTips(root, resolve) {
+  root.querySelectorAll("[data-tip]").forEach(el => {
+    const open = () => {
+      const d = resolve(el);
+      if (d && d.lines && d.lines.length) showTip(el.getBoundingClientRect(), d.title, d.lines);
+    };
+    /* Именно addEventListener, а не onmouseenter: на этих же плитках висит
+       свой обработчик наведения (подсветка врагов в бою), и присваивание
+       затирало бы один другим. */
+    el.addEventListener("mouseenter", open);
+    el.addEventListener("mouseleave", hideTip);
+    // палец: держим полсекунды — и подсказка встаёт, не мешая обычному нажатию
+    el.addEventListener("touchstart", () => {
+      clearTimeout(holdTimer);
+      holdTimer = setTimeout(open, 450);
+    }, { passive: true });
+    el.addEventListener("touchend", hideTip);
+    el.addEventListener("touchmove", hideTip, { passive: true });
+  });
+}
+
+
+/* ===== src/ui/modals.js ===== */
+/* Модалки: оживление фото, переименование, справка. */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Чем занят приём — короткая подпись под названием. */
+const SKILL_KIND = { damage: "урон", heal: "лечение", shield: "щит", stun: "оглушение", guard: "защита" };
+
+
+
+
+
+let openId = null;
+/* Полный список приёмов свёрнут: в карточке видна четвёрка, которая идёт в
+   бой, а девять строк раскрываются по «изменить». Состояние живёт здесь,
+   потому что карточка перерисовывается на каждый выбор. */
+let skillsOpen = false;
+
+/** Можно ли трогать набор: пятый лишний, а последний снимать нельзя. */
+function esть_проверка(есть, сейчас) {
+  if (!есть && сейчас.length >= LOADOUT) {
+    toast("В бой берут только " + LOADOUT + " приёма — сперва сними лишний", "bad");
+    return true;
+  }
+  if (есть && сейчас.length <= 1) {
+    toast("Хоть один приём чудищу нужен", "bad");
+    return true;
+  }
+  return false;
+}
+function openModal(id) {
+  openId = id;
+  $("#veil").classList.add("on");
+  $$(".modal").forEach(m => m.classList.toggle("on", m.id === id));
+}
+function closeModal() {
+  openId = null;
+  $("#veil").classList.remove("on");
+  $$(".modal").forEach(m => m.classList.remove("on"));
+}
+
+/* ---------- сборка обработчиков ---------- */
+function initModals() {
+  // общее поведение
+  $("#veil").addEventListener("click", e => { if (e.target === $("#veil")) closeModal() });
+  $$("[data-close]").forEach(b => b.onclick = closeModal);
+  addEventListener("keydown", e => {
+    if (e.key !== "Escape") return;
+    if (openId) closeModal();
+    else if (S.ghost) bus.emit("build:end");
+  });
+  bus.on("modal", id => (id ? openModal(id) : closeModal()));
+
+  // Перед списанием ресурсов всегда показываем следующий облик и конкретную
+  // пользу уровня — игрок понимает, за что платит, ещё до старта стройки.
+  let upgradeTarget = null;
+  bus.on("modal:upgrade", b => {
+    const up = upgradeOf(b);
+    if (!up) return;
+    upgradeTarget = b;
+    const next = { ...b, lvl: b.lvl + 1 };
+    const key = spriteOf(next);
+    /* Чем меряется польза от уровня, у каждого здания своё. Пещера ведёт одну
+       вылазку и на пятом уровне — растёт у неё не число мест, а глубина: на
+       каждом уровне открываются вылазки подальше и подороже. */
+    const мера = {
+      habitat: ["мест для чудищ", () => habitatLevels(b.el)[b.lvl - 1].cap,
+                () => (habitatLevels(b.el)[next.lvl - 1] || {}).cap],
+      tower:   ["мест для яиц", () => slotsOf(b), () => slotsOf(next)],
+      cave:    ["вылазок открыто", () => caveDepth(b.lvl), () => caveDepth(next.lvl)],
+      // грядка всегда одна — уровень фермы открывает не места, а сорта
+      farm:    ["сортов доступно", () => cropsFor(b.lvl).length, () => cropsFor(next.lvl).length]
+    }[b.type] || ["грядок", () => slotsOf(b), () => slotsOf(next)];
+    const metric = мера[0], before = мера[1](), after = мера[2]();
+    $("#upgradeTitle").textContent = `Улучшить: ${BUILDINGS[b.type].name}`;
+    $("#upgradeBody").innerHTML = `<div class="upgrade-layout">
+      <div class="upgrade-preview"><span>УРОВЕНЬ ${next.lvl}</span>
+        <img src="${key ? ASSET_SRC[key] : ""}" alt="Следующий уровень здания"></div>
+      <div class="upgrade-result"><div class="upgrade-kicker">ПОСЛЕ УЛУЧШЕНИЯ</div>
+        <div class="upgrade-levels"><b>${b.lvl}</b><i>→</i><b>${next.lvl}</b></div>
+        <div class="upgrade-stat"><small>${metric}</small><strong>${before} <em>→</em> ${after}</strong></div>
+        <p>${BUILDINGS[b.type].desc}</p></div></div>`;
+    $("#upgradeConfirm").innerHTML = `Улучшить · ${up.cost} <img class="ic2" src="${ASSET_SRC.gold}" alt="">`;
+    openModal("mUpgrade");
+  });
+  $("#upgradeConfirm").onclick = () => {
+    if (!upgradeTarget) return;
+    const err = startUpgrade(upgradeTarget);
+    if (err) return toast(err, "bad");
+    closeModal();
+    toast("Строитель взялся за улучшение", "good");
+    upgradeTarget = null;
+  };
+  /**
+   * Карточка чудища. Одна и та же и для своего зверя, и для витрины лавки:
+   * если монстра нет (m === null), показываем вид «как он будет выглядеть».
+   * Редкость здесь главная строка — от неё зависят и статы, и аппетит, и доход,
+   * поэтому множители честно выписаны, а не спрятаны в формулах.
+   */
+  const showMonster = ({ m = null, id = null, sp = null, cost = null }) => {
+    const species = sp || speciesOf(m && m.species);
+    if (!species) return;
+    const stage = m ? monsterStage(m) : 1;
+    const stats = m ? statsAt(m) : species.base;
+    const art = m && m.kind === "photo" ? m.src : ASSET_SRC[spriteFor(species, stage)];
+    const level = m ? m.level : 1;
+    const nextStage = stageLevels(species).find(x => x > level);
+    const need = xpNeed(level, m || species), xp = m ? m.xp : 0;
+    // какие четыре приёма чудище берёт в бой прямо сейчас
+    const открытые = skillsOf(species, level);
+    const взято = m ? pickLoadout(m, открытые) : открытые.slice(0, LOADOUT);
+    const pct = Math.min(100, xp / need * 100);
+    const growth = nextStage ? `Следующий этап роста — уровень ${nextStage}` : "Максимальный этап роста";
+    const r = rarityOf(m || species);
+    const els = elementsOf(species);
+    const income = goldPerMin({ level, rarity: r.id }, stage);
+
+    $("#monsterModalTitle").innerHTML = rarityBadge(m || species, "lg")
+      + " " + esc(m ? m.name : species.name);
+
+    $("#monsterModalBody").innerHTML = `
+      <div class="mc">
+        <!-- Крупный зверь и кольцо уровня: то, ради чего карточку открывают.
+             Кольцо заодно показывает опыт до следующего уровня. -->
+        <div class="mc-hero">
+          <div class="mc-art" style="background-image:url(${art})"></div>
+          <div class="mc-ring" style="--p:${pct}%">
+            <span>${level}</span><i>УРОВЕНЬ</i>
+          </div>
+        </div>
+
+        <div class="mc-body">
+          <div class="mc-line">
+            ${els.map(e => elIcon(e, "md")).join("")}
+            <span class="mc-rar">${rarityBadge(m || species)} ${rarityName(m || species)}</span>
+          </div>
+
+          <div class="mc-xp"><i style="width:${pct}%"></i></div>
+          <div class="mc-xp-lbl"><span>${growth}</span><span>${fmt(xp)} / ${fmt(need)}</span></div>
+
+          <div class="mc-stats">
+            <div><b>${stats.hp}</b><span>ЖИЗНЬ</span></div>
+            <div><b>${stats.atk}</b><span>АТАКА</span></div>
+            <div><b>${stats.def}</b><span>ЗАЩИТА</span></div>
+            <div><b>${stats.spd}</b><span>СКОРОСТЬ</span></div>
+          </div>
+
+          <!-- Четвёрка, которая идёт в бой. Остальные приёмы прячутся за
+               «изменить»: девять строк подряд — половина прежней карточки. -->
+          <div class="mc-sk-head">В бою
+            <b id="mmSkCount">${взято.length} из ${LOADOUT}</b>
+            ${m ? `<button class="mc-more" data-more>${skillsOpen ? "свернуть" : "изменить"}</button>` : ""}
+          </div>
+          <div class="mc-slots">
+            ${Array.from({ length: LOADOUT }, (_, i) => {
+              const ab = взято[i];
+              if (!ab) return `<div class="mc-slot free">пусто</div>`;
+              const face = ab.el
+                ? `<img src="${ASSET_SRC[ELEMENTS[ab.el].icon]}" alt="">`
+                : `<span class="mc-glyph">${ab.icon || "✦"}</span>`;
+              return `<div class="mc-slot" data-tip="1" data-ab="${ab.id}">
+                ${face}<span>${esc(ab.name)}</span></div>`;
+            }).join("")}
+          </div>
+
+          <div class="mc-all" ${skillsOpen ? "" : "hidden"}>
+            <div class="mc-hint">${m
+              ? "Нажми, чтобы взять приём в бой или вернуть в запас. Подержи — подробности."
+              : "У своего чудища четвёрку можно собрать самому."}</div>
+            ${skillsOf(species).map((ab, i) => {
+              const at = skillLevel(i, species), open = level >= at;
+              const face = ab.el
+                ? `<img src="${ASSET_SRC[ELEMENTS[ab.el].icon]}" alt="">`
+                : `<span class="mm-sk-glyph">${ab.icon || "✦"}</span>`;
+              const взят = взято.some(x => x.id === ab.id);
+              const тег = m && open ? "button" : "div";
+              return `<${тег} class="mm-skill k-${ab.kind} ${open ? "" : "shut"} ${взят ? "on" : ""}"
+                  data-tip="1" data-ab="${ab.id}" ${m && open ? "" : "disabled"}>
+                <span class="mm-sk-ic">${face}</span>
+                <div><b>${esc(ab.name)}</b>
+                  <small>${SKILL_KIND[ab.kind] || ""}${ab.cost ? " · " + ab.cost + " сил" : " · бесплатно"}${ab.cd ? " · раз в " + ab.cd : ""}</small></div>
+                <span class="mm-sk-lv">${!open ? "с " + at + " ур." : взят ? "в бою" : "в запасе"}</span>
+              </${тег}>`;
+            }).join("")}
+          </div>
+
+          ${m ? `<button class="b hot big" id="monsterFeed">Кормить · ${feedCost(m)}
+            <img class="ic2" src="${ASSET_SRC.food}" alt="апельсины"></button>` : ""}
+          ${cost != null ? `<button class="b gold big" id="monsterBuy">Купить яйцо · ${fmt(cost)}</button>` : ""}
+
+          <details class="mc-det">
+            <summary>Подробности</summary>
+            <div class="mc-det-in">
+              <div><span>Доход в логове</span><b>${income.toFixed(1)} / мин</b></div>
+              <div><span>Живёт в логове</span><b class="mm-home">${els.map(e => elIcon(e, "md")).join("")}</b></div>
+              <div><span>Редкость даёт</span><b>сила ×${r.power.toFixed(2)} · доход ×${r.gold.toFixed(2)}</b></div>
+              <div><span>Аппетит</span><b>×${r.food.toFixed(2)}</b></div>
+              ${m ? `<button class="b go" id="monsterFeed5">Кормить ×5 · ${feedCost(m) * 5}
+                <img class="ic2" src="${ASSET_SRC.food}" alt="апельсины"></button>
+                <button class="b sm" id="monsterSell">Продать · ${fmt(priceOf(m))}
+                <img class="ic2" src="${ASSET_SRC.gold}" alt="золото"></button>` : ""}
+            </div>
+          </details>
+        </div>
+      </div>`;
+
+    openModal("mMonster");
+
+    /* Подробный разбор приёма — по наведению и по долгому нажатию. Он один и
+       тот же и здесь, и в бою: объяснение живёт в data/abilities.js. */
+    const карточка = $("#mMonster");
+    attachTips(карточка, el => {
+      const ab = открытые.find(x => x.id === el.dataset.ab)
+        || skillsOf(species).find(x => x.id === el.dataset.ab);
+      return ab && { title: ab.name, lines: explain(ab) };
+    });
+
+    /* Выбор четвёрки: нажатие берёт приём в бой или возвращает в запас.
+       Пятый не влезет, последний снять нельзя — иначе чудищу нечем ходить. */
+    if (m) карточка.querySelectorAll("[data-ab]:not([disabled])").forEach(btn => {
+      btn.onclick = () => {
+        const id = btn.dataset.ab;
+        const сейчас = pickLoadout(m, открытые).map(a => a.id);
+        const есть = сейчас.includes(id);
+        if (esть_проверка(есть, сейчас)) return;
+        m.loadout = есть ? сейчас.filter(x => x !== id) : [...сейчас, id];
+        persist();
+        hideTip();
+        showMonster({ m, id, sp, cost });          // перерисовываем карточку
+        bus.emit("ui:sheet");
+      };
+    });
+
+    const more = карточка.querySelector("[data-more]");
+    if (more) more.onclick = () => {
+      skillsOpen = !skillsOpen;
+      showMonster({ m, id, sp, cost });
+    };
+
+    const buy = $("#monsterBuy");
+    if (buy) buy.onclick = () => { closeModal(); bus.emit("shop:buySpecies", { id, sp: species, cost }) };
+
+    // продажа спрашивает подтверждение: карточка открывается одним касанием,
+    // и промахнуться по кнопке легче, чем кажется
+    arm($("#monsterSell"), "Точно продать?", () => {
+      const price = sellMonster(m);
+      closeModal();
+      if (price != null) bus.emit("toast", { text: m.name + " продан за " + fmt(price) + " золота", kind: "good" });
+    });
+
+    const ate = res => {
+      if (typeof res === "string") return toast(res, "bad");
+      if (res && res.levelUp) toast(`${m.name} вырос до ${res.levelUp} уровня`, "good");
+      showMonster({ m });                       // обновляем карточку на месте
+    };
+    const feedBtn = $("#monsterFeed");
+    if (feedBtn) feedBtn.onclick = () => ate(feed(m));
+    const feed5 = $("#monsterFeed5");
+    if (feed5) feed5.onclick = () => {
+      const { done, levelUp } = feedMany(m, 5);
+      ate(done ? (levelUp ? { levelUp } : null) : "Не хватает апельсинов — посади урожай на ферме");
+    };
+  };
+
+  bus.on("modal:monster", m => showMonster({m})); bus.on("modal:species", x => showMonster(x));
+
+  // переименование
+  let renameTarget = null;
+  bus.on("modal:rename", m => {
+    renameTarget = m;
+    $("#rName").value = m.name;
+    openModal("mRen");
+    setTimeout(() => $("#rName").select(), 40);
+  });
+  $("#rOk").onclick = () => {
+    const v = $("#rName").value.trim();
+    if (v && renameTarget) {
+      renameTarget.name = v;
+      renameTarget._th = makeThumb(renameTarget);
+      persist();
+      bus.emit("ui:sheet");
+    }
+    closeModal();
+  };
+  $("#rName").addEventListener("keydown", e => { if (e.key === "Enter") $("#rOk").click() });
+
+  // справка
+  $("#helpBtn").onclick = () => openModal("mHelp");
+}
+
+
+/* ===== src/ui/grow.js ===== */
+/* Три карточки, общие для фермы и башни высиживания:
+
+     showChoice  — что посадить/заложить: сетка вариантов с наградой,
+                   сроком и ценой (ферма выбирает сорт этой карточкой;
+                   у башни свой выбор вида — species-view в sheets.js,
+                   этот модуль его не трогает).
+     showGrowth  — что уже растёт: крупная картинка, награда, таймер,
+                   кнопки поторопить или собрать. Ферма и башня показывают
+                   одно и то же, различается только чем их наполняют.
+     showHatched — «вылупилось!»: короткая карточка нового чудища сразу
+                   после высиживания, ещё до полной карточки со статами.
+
+   Экран решает, ЧТО показать (арт, награду, кнопки), этот модуль — только
+   КАК: рамка, полоса прогресса, сетка. Логика игры сюда не заходит. */
+
+
+
+
+
+
+
+
+/* ---------- что растёт ---------- */
+
+/**
+ * @param {object} o
+ * @param {string} o.title  — заголовок модалки («Апельсиновая ферма» и т.п.)
+ * @param {string} [o.art]  — картинка того, что растёт (если её нет — glyph)
+ * @param {string} [o.glyph] — запасной символ, когда картинки нет (нестандартный
+ *                             монстр без своего яйца — см. game/buildings-art.js,
+ *                             там та же развилка для холста)
+ * @param {string} o.name   — имя плантации или будущего чудища
+ * @param {string} o.what   — HTML-строка «что получишь»: награда деньгами
+ *                            у фермы, вид и стихия будущего чудища у башни
+ * @param {number} o.left   — сколько ещё зреть, мс (0 или меньше — готово)
+ * @param {number} o.total  — весь срок целиком, для полосы прогресса
+ * @param {string} o.actions — HTML кнопок снизу (их клики вешает вызвавший
+ *                             после showGrowth — так же, как везде в sheets.js)
+ */
+function showGrowth({ title, art, glyph = "✦", name, what, left, total, actions }) {
+  $("#growTitle").textContent = title;
+  const ready = left <= 0;
+  const pct = total > 0 ? clamp(100 - (left / total) * 100, 0, 100) : 100;
+  $("#growBody").innerHTML = `
+    <div class="gr-card">
+      <div class="gr-art">${art ? `<img src="${art}" alt="">` : `<span class="gr-glyph">${glyph}</span>`}</div>
+      <div class="gr-info">
+        <div class="gr-name">${esc(name)}</div>
+        <div class="gr-what">${what}</div>
+        ${ready
+          ? `<div class="gr-ready">Готово!</div>`
+          : `<div class="gr-bar"><i style="width:${pct}%"></i></div>
+             <div class="gr-left"><i>⏳</i>готово через <b>${tleft(left)}</b></div>`}
+      </div>
+    </div>
+    <div class="rowb gr-actions">${actions}</div>`;
+  openModal("mGrow");
+}
+const closeGrowth = closeModal;
+
+/* ---------- что посадить ---------- */
+
+/**
+ * @param {string} o.title
+ * @param {string} o.hint    — подсказка под заголовком (необязательно)
+ * @param {Array}  o.cards   — [{ id, art, name, rewardHtml, ms, cost, locked }]
+ * @param {(id) => void} o.onPick
+ */
+function showChoice({ title, hint, cards, onPick }) {
+  $("#pickTitle").textContent = title;
+  $("#pickBody").innerHTML = `
+    ${hint ? `<p class="d">${hint}</p>` : ""}
+    <div class="pk-grid">${cards.map(c => `
+      <button class="pk-card" data-pick="${c.id}" ${c.locked ? "disabled" : ""}>
+        <div class="pk-head">${esc(c.name)}</div>
+        <div class="pk-row">
+          <div class="pk-art"><img src="${c.art}" alt=""></div>
+          <div class="pk-reward">${c.rewardHtml}</div>
+        </div>
+        <div class="pk-foot">
+          <span class="pk-time"><i>⏳</i>${tleft(c.ms)}</span>
+          <span class="pk-cost">${c.locked ? "недоступно" : fmtShort(c.cost) + "  " }
+            ${c.locked ? "" : `<img class="ic2" src="${ASSET_SRC.gold}" alt="">`}</span>
+        </div>
+      </button>`).join("")}
+    </div>`;
+  $$("#pickBody [data-pick]").forEach(btn => {
+    btn.onclick = () => onPick(btn.dataset.pick);
+  });
+  openModal("mPick");
+}
+const closeChoice = closeModal;
+
+/* ---------- вылупилось ---------- */
+
+function renderHatched(m) {
+  const price = priceOf(m);
+  $("#hatchedBody").innerHTML = `
+    <div class="htc-card">
+      <div class="htc-art"><img src="${monsterPortrait(m)}" alt=""></div>
+      <div class="htc-name">${rarityBadge(m)} ${esc(m.name)}</div>
+      <div class="htc-els">${elLine(m, "md")}</div>
+    </div>
+    <div class="rowb">
+      <button class="b go big" id="htcKeep">Поместить</button>
+      <button class="b sm hot" id="htcSell">Продать · ${fmt(price)}
+        <img class="ic2" src="${ASSET_SRC.gold}" alt=""></button>
+    </div>`;
+  $("#htcKeep").onclick = closeModal;
+  $("#htcSell").onclick = () => {
+    sellMonster(m);
+    toast(m.name + " продан за " + fmt(price), "good");
+    closeModal();
+  };
+  openModal("mHatched");
+}
+function initGrow() {
+  // хатч (game/tower.js) сам не знает про модалки — только кричит в шину
+  bus.on("monster:hatched", renderHatched);
+}
+
+
 /* ===== src/ui/sheets.js ===== */
 /* Нижний лист: логово, ферма, башня, барак, дерево, карточка монстра.
    Каждое здание рисует свой лист — новое здание добавляется одной веткой. */
+
 
 
 
@@ -9166,6 +9777,16 @@ const elBadge = x => elLine(x);
 const gold = `<img class="ic2" src="${ASSET_SRC.gold}" alt="">`;
 const food = `<img class="ic2" src="${ASSET_SRC.food}" alt="">`;
 const crystal = `<img class="ic2" src="${ASSET_SRC.crystal}" alt="кристаллы">`;
+
+/* Что сейчас показано в попапе «что растёт» (ferma/tower), если он открыт —
+   секундный тик ниже подрисовывает в нём таймер тем же способом, что и
+   в самом листе под ним, иначе цифры в открытом попапе просто замирают. */
+let growTarget = null;
+function refreshGrowPopup() {
+  if (!growTarget || !$("#mGrow").classList.contains("on")) return;
+  if (growTarget.kind === "crop") openCropGrowth(growTarget.b);
+  else openEggGrowth(growTarget.b, growTarget.i);
+}
 function closeSheet() { S.sheet = null; el().classList.remove("on") }
 
 /**
@@ -9207,7 +9828,6 @@ function render() {
     if (!b) return closeSheet();
     const view = S.sheet.view;
     if (b.job) { S.sheet.view = null; siteSheet(node, b) }
-    else if (view && view.name === "plant") plantingView(node, b, view.slot);
     else if (view && view.name === "species") speciesView(node, b, view.slot);
     else if (view && view.name === "parent") parentView(node, b, view.slot);
     else if (b.type === "habitat") habitatSheet(node, b);
@@ -9272,86 +9892,84 @@ function habitatSheet(node, b) {
 }
 
 /* ---------- ферма: грядки и плантации ---------- */
+/* Грядка всегда одна (data/buildings.js): экран фермы не выбирает МЕЖДУ
+   грядками, а сразу говорит, свободна она или занята, и одной кнопкой
+   открывает нужную карточку — выбор сорта (showChoice) или то, что уже
+   растёт (showGrowth). Обе — общие с башней высиживания, см. ui/grow.js. */
 function farmSheet(node, b) {
   syncSlots(b);
-  const n = slotsOf(b);
   const up = upgradeOf(b);
+  const cell = b.slots[0] || (b.slots[0] = { crop: null, readyAt: 0 });
+  const cr = cell.crop != null ? cropById(cell.crop) : null;
+  const ready = cr && cell.readyAt <= Date.now();
 
-  const cells = [];
-  for (let i = 0; i < n; i++) {
-    const cell = b.slots[i] || { crop: null };
-    if (cell.crop == null) {
-      cells.push(`<button class="slot free" data-slot="${i}">
-        <div class="n">Грядка ${i + 1}</div><div class="d">пусто — посадить</div></button>`);
-      continue;
-    }
-    const cr = cropById(cell.crop), left = cell.readyAt - Date.now();
-    const pct = clamp(100 - left / cr.ms * 100, 0, 100);
-    cells.push(`<div class="slot">
-      <div class="n">${cr.name}</div>
-      <div class="meter f"><i style="width:${pct}%"></i>
-        <b>${left > 0 ? tleft(left) : "готово"}</b></div>
-      ${left > 0
-        ? `<button class="b sm" data-rush="${i}">Поторопить · ${fmtShort(rushCropCost(cell))}</button>`
-        : `<button class="b sm go" data-harv="${i}">Собрать +${fmtShort(cr.food)} ${food}</button>`}
-    </div>`);
-  }
-
-  node.innerHTML = head("Апельсиновая ферма",
-    `<span class="hint">уровень ${b.lvl} · грядок ${n}</span>`)
-    + `<div class="slots">${cells.join("")}</div>
+  node.innerHTML = head("Апельсиновая ферма", `<span class="hint">уровень ${b.lvl}</span>`)
+    + `<div class="empty">${!cr
+        ? "Грядка свободна — выбери, что посадить."
+        : ready ? esc(cr.name) + " созрел — загляни и собери урожай."
+        : esc(cr.name) + " зреет — загляни, когда будет готово."}</div>
       <div class="rowb">
+        <button class="b go big" data-act="tend">${!cr ? "Посадить" : "Открыть грядку"}</button>
         ${up ? `<button class="b" data-act="upgrade">Улучшить · ${fmtShort(up.cost)} ${gold}</button>` : ""}
         <button class="b sm" data-act="move">Переместить</button>
         <button class="b sm" data-act="sell">Снести</button>
       </div>`;
 
-  $$("#sheet [data-slot]").forEach(btn => {
-    btn.onclick = () => openView("plant", +btn.dataset.slot);
-  });
-  $$("#sheet [data-harv]").forEach(btn => {
-    btn.onclick = () => {
-      const s = buildScreen(b, 58);
-      collect({ b, kind: "food", x: s.x, y: s.y, slot: +btn.dataset.harv });
-    };
-  });
-  $$("#sheet [data-rush]").forEach(btn => {
-    btn.onclick = () => {
-      const cell = b.slots[+btn.dataset.rush];
-      const cost = rushCropCost(cell);
-      if (S.gold < cost) return toast("Не хватает золота", "bad");
-      S.gold -= cost; cell.readyAt = Date.now();
-      bus.emit("ui:top"); persist(); render();
-    };
-  });
+  node.querySelector('[data-act="tend"]').onclick = () => (cr ? openCropGrowth(b) : openCropChoice(b));
   bindUpgrade(node, b);
 }
 
 const rushCropCost = cell => Math.max(1, Math.ceil((cell.readyAt - Date.now()) / 1000) * WORK.rushPerSec);
 
-/** Выбор плантации для грядки. */
-function plantingView(node, b, slot) {
-  const list = cropsFor(b.lvl).map(c => `
-    <button class="crop" data-crop="${c.id}">
-      <div class="n">${c.name}</div>
-      <div class="d">${tleft(c.ms)} · +${fmtShort(c.food)} ${food}</div>
-      <div class="d" style="color:var(--ink)">${fmtShort(c.cost)} ${gold}</div>
-    </button>`).join("");
-
-  node.innerHTML = head(`Грядка ${slot + 1}`, `<span class="hint">ферма ур. ${b.lvl}</span>`)
-    + `<div class="crops">${list}</div>
-       <div class="rowb"><button class="b sm" data-act="back">Назад</button></div>`;
-
-  $$("#sheet [data-crop]").forEach(btn => {
-    btn.onclick = () => {
-      const err = plant(b, slot, +btn.dataset.crop);
+/** Что посадить: сетка сортов, доступных на этом уровне фермы. */
+function openCropChoice(b) {
+  showChoice({
+    title: "Что посадить",
+    hint: `Ферма ${b.lvl} уровня — доступно сортов: ${cropsFor(b.lvl).length}.`,
+    cards: cropsFor(b.lvl).map(c => ({
+      id: c.id, art: ASSET_SRC.food, name: c.name, ms: c.ms, cost: c.cost,
+      rewardHtml: `<span>+${fmtShort(c.food)} ${food}</span>`
+    })),
+    onPick: id => {
+      const err = plant(b, 0, +id);
       if (err) return toast(err, "bad");
-      toast("Посажено: " + cropById(+btn.dataset.crop).name, "good");
-      backToSheet();
-    };
+      toast("Посажено: " + cropById(+id).name, "good");
+      closeChoice();
+      render();
+    }
   });
-  node.querySelector('[data-act="back"]').onclick = backToSheet;
-  $$("#sheet [data-sheet-close]").forEach(x => { x.onclick = closeSheet });
+}
+
+/** Что растёт: картинка, таймер и поторопить/собрать — одна грядка целиком. */
+function openCropGrowth(b) {
+  growTarget = { kind: "crop", b };
+  const cell = b.slots[0];
+  const cr = cropById(cell.crop);
+  const left = cell.readyAt - Date.now();
+  const ready = left <= 0;
+  const actions = ready
+    ? `<button class="b go big" data-act="harvest">Собрать +${fmtShort(cr.food)} ${food}</button>`
+    : `<button class="b" data-act="rush">Поторопить · ${fmtShort(rushCropCost(cell))} ${gold}</button>`;
+
+  showGrowth({
+    title: "Апельсиновая ферма", art: ASSET_SRC.food, name: cr.name,
+    what: `<span>${food} +${fmtShort(cr.food)}</span>`, left, total: cr.ms, actions
+  });
+
+  const harvest = $("#growBody [data-act='harvest']");
+  if (harvest) harvest.onclick = () => {
+    const s = buildScreen(b, 58);
+    collect({ b, kind: "food", x: s.x, y: s.y, slot: 0 });
+    closeGrowth(); render();
+  };
+  const rush = $("#growBody [data-act='rush']");
+  if (rush) rush.onclick = () => {
+    const cost = rushCropCost(cell);
+    if (S.gold < cost) return toast("Не хватает золота", "bad");
+    S.gold -= cost; cell.readyAt = Date.now();
+    bus.emit("ui:top"); persist();
+    openCropGrowth(b);   // перерисовать карточку — теперь готово
+  };
 }
 
 /* ---------- башня высиживания ---------- */
@@ -9361,6 +9979,10 @@ function towerSheet(node, b) {
   const up = upgradeOf(b);
   const species = hatchableSpecies();
 
+  /* Свободное место остаётся коротким списком (мест до трёх, выбор вида —
+     отдельный экран species-view, его не трогаем). Занятое — теперь просто
+     строка-приглашение: вся возня с таймером и кнопками ушла в showGrowth,
+     общую с фермой карточку «что растёт» (ui/grow.js). */
   const cells = [];
   for (let i = 0; i < n; i++) {
     const egg = b.eggs[i];
@@ -9373,24 +9995,11 @@ function towerSheet(node, b) {
         </div></div>`);
       continue;
     }
-    const left = egg.readyAt - Date.now();
-    const pct = clamp(100 - left / egg.dur * 100, 0, 100);
-    // Вопрос «точно?» держим в состоянии листа: секундный тик перерисовывает
-    // башню, и подтверждение на самой кнопке сбрасывалось бы каждую секунду.
-    const asking = asks("egg" + i);
-    cells.push(`<div class="slot">
+    const ready = egg.readyAt <= Date.now();
+    cells.push(`<button class="slot" data-egg="${i}">
       <div class="n">${esc(egg.data.name || "Яйцо")}</div>
-      <div class="meter h"><i style="width:${pct}%"></i>
-        <b>${left > 0 ? tleft(left) : "пора вылупляться"}</b></div>
-      <div class="sp">
-        ${left > 0
-          ? `<button class="b sm" data-rushegg="${i}">Поторопить · ${fmtShort(rushEggCost(egg))} ${gold}</button>
-             <button class="b sm" data-rusheggcr="${i}">Поторопить · ${eggRushCrystals(egg)} ${crystal}</button>`
-          : `<button class="b sm go" data-hatch="${i}">Вылупить</button>`}
-        <button class="b sm ${asking ? "hot" : ""}" data-sellegg="${i}">${asking
-          ? "Точно продать?" : `Продать · ${fmtShort(eggValue(egg))} ${gold}`}</button>
-      </div>
-    </div>`);
+      <div class="d">${ready ? "пора вылупляться" : "зреет — " + tleft(egg.readyAt - Date.now())}</div>
+    </button>`);
   }
 
   node.innerHTML = head("Башня высиживания",
@@ -9405,32 +10014,67 @@ function towerSheet(node, b) {
       </div>`;
 
   $$("#sheet [data-lay]").forEach(btn => btn.onclick = () => openView("species", +btn.dataset.lay));
+  $$("#sheet [data-egg]").forEach(btn => btn.onclick = () => openEggGrowth(b, +btn.dataset.egg));
   /* Пока смотришь на созревшее яйцо, над подходящими логовами прыгает
      стрелка: сразу видно, куда малыш поедет и есть ли вообще куда. */
   const созрело = (b.eggs || []).find(e => e && Date.now() >= e.readyAt);
   pointToHomes(созрело ? homesFor(созрело.data).map(x => x.id) : [], 20000);
 
-  $$("#sheet [data-hatch]").forEach(btn => btn.onclick = () => hatch(b, +btn.dataset.hatch));
-  $$("#sheet [data-rushegg]").forEach(btn => btn.onclick = () => {
-    const err = rushEgg(b, +btn.dataset.rushegg);
-    if (err) toast(err, "bad");
-  });
-  $$("#sheet [data-rusheggcr]").forEach(btn => btn.onclick = () => {
-    const err = rushEggCrystals(b, +btn.dataset.rusheggcr);
-    if (err) toast(err, "bad");
-  });
-  $$("#sheet [data-sellegg]").forEach(btn => btn.onclick = () => {
-    const i = +btn.dataset.sellegg;
-    if (!asks("egg" + i)) return ask("egg" + i);      // первый клик только спрашивает
-    S.sheet.ask = null;
-    const price = sellEgg(b, i);
-    if (price != null) toast("Яйцо продано за " + fmt(price) + " золота", "good");
-    render();
-  });
   bindUpgrade(node, b);
 }
 
 const rushEggCost = egg => Math.max(1, Math.ceil((egg.readyAt - Date.now()) / 1000) * EGG.rushPerSec);
+
+/** Что растёт в башне: картинка яйца, кто вылупится, таймер и действия. */
+function openEggGrowth(b, i) {
+  const egg = b.eggs[i];
+  if (!egg) return;
+  growTarget = { kind: "egg", b, i };
+
+  const left = egg.readyAt - Date.now();
+  const ready = left <= 0;
+  const sp = egg.data && egg.data.kind === "species" ? speciesOf(egg.data.species) : null;
+  const spriteKey = sp ? eggSprite(sp) : null;
+  const asking = asks("egg" + i);
+
+  const actions = (ready
+    ? `<button class="b go big" data-act="hatch">Вылупить</button>`
+    : `<button class="b" data-act="rushgold">Поторопить · ${fmtShort(rushEggCost(egg))} ${gold}</button>
+       <button class="b" data-act="rushcr">Поторопить · ${eggRushCrystals(egg)} ${crystal}</button>`)
+    + `<button class="b sm ${asking ? "hot" : ""}" data-act="sellegg">${asking
+        ? "Точно продать?" : `Продать · ${fmtShort(eggValue(egg))} ${gold}`}</button>`;
+
+  showGrowth({
+    title: "Башня высиживания",
+    art: spriteKey ? ASSET_SRC[spriteKey] : "", glyph: "🥚",
+    name: egg.data.name || "Яйцо",
+    what: sp ? `<span>вылупится: ${elBadge(sp)}</span>` : "",
+    left, total: egg.dur, actions
+  });
+
+  const hatchBtn = $("#growBody [data-act='hatch']");
+  if (hatchBtn) hatchBtn.onclick = () => { closeGrowth(); hatch(b, i) };
+  const rushGold = $("#growBody [data-act='rushgold']");
+  if (rushGold) rushGold.onclick = () => {
+    const err = rushEgg(b, i);
+    if (err) return toast(err, "bad");
+    openEggGrowth(b, i);
+  };
+  const rushCr = $("#growBody [data-act='rushcr']");
+  if (rushCr) rushCr.onclick = () => {
+    const err = rushEggCrystals(b, i);
+    if (err) return toast(err, "bad");
+    openEggGrowth(b, i);
+  };
+  const sell = $("#growBody [data-act='sellegg']");
+  if (sell) sell.onclick = () => {
+    if (!asks("egg" + i)) { ask("egg" + i); return openEggGrowth(b, i) }   // первый клик только спрашивает
+    S.sheet.ask = null;
+    const price = sellEgg(b, i);
+    if (price != null) toast("Яйцо продано за " + fmt(price) + " золота", "good");
+    closeGrowth(); render();
+  };
+}
 
 /** Выбор вида монстра для яйца. */
 function speciesView(node, b, slot) {
@@ -10028,6 +10672,7 @@ function initSheets() {
   // тикающие таймеры обновляем сами; карточку монстра не трогаем,
   // чтобы не сбивать нажатия на её кнопки
   setInterval(() => {
+    refreshGrowPopup();
     if (!S.sheet || S.battle) return;
     if (S.sheet.kind === "obstacle") { render(); return }
     if (S.sheet.kind !== "build") return;
@@ -10038,376 +10683,6 @@ function initSheets() {
     const breedTicks = b.type === "breeding" && !!b.breed;
     if (b.job || farmTicks || towerTicks || breedTicks || b.type === "habitat" || b.type === "barracks") render();
   }, 1000);
-}
-
-
-/* ===== src/ui/tip.js ===== */
-/* Всплывающая подсказка: подробный разбор того, на что навёл.
-
-   Одна на всю игру: панелька живёт в углу #app и переезжает к тому месту, где
-   курсор. Мышью — по наведению, пальцем — по долгому нажатию: на телефоне
-   иначе никак, а знать, что делает приём, нужно и там.
-
-   Содержимое приходит списком строк (см. explain в data/abilities.js) —
-   модуль ничего не знает ни про приёмы, ни про бой. */
-
-let box = null, holdTimer = 0;
-
-function ensure() {
-  if (box) return box;
-  box = document.createElement("div");
-  box.id = "tip";
-  document.getElementById("app").append(box);
-  return box;
-}
-
-/** Показать подсказку рядом с прямоугольником rect. */
-function showTip(rect, title, lines) {
-  const t = ensure();
-  t.innerHTML = `<b>${esc(title)}</b>` +
-    (lines || []).map(l => `<span>${esc(l)}</span>`).join("");
-  t.classList.add("on");
-
-  // сперва показываем, потом меряем: до этого размеры нулевые
-  const w = t.offsetWidth, h = t.offsetHeight, m = 8;
-  let x = rect.left + rect.width / 2 - w / 2;
-  let y = rect.top - h - m;
-  if (y < m) y = rect.bottom + m;                       // не влезла сверху — снизу
-  x = Math.max(m, Math.min(innerWidth - w - m, x));
-  y = Math.max(m, Math.min(innerHeight - h - m, y));
-  t.style.left = x + "px";
-  t.style.top = y + "px";
-}
-function hideTip() {
-  clearTimeout(holdTimer);
-  if (box) box.classList.remove("on");
-}
-
-/**
- * Развесить подсказки внутри box: на каждый элемент с [data-tip] зовётся
- * resolve(el) и должен вернуть { title, lines } либо ничего.
- */
-function attachTips(root, resolve) {
-  root.querySelectorAll("[data-tip]").forEach(el => {
-    const open = () => {
-      const d = resolve(el);
-      if (d && d.lines && d.lines.length) showTip(el.getBoundingClientRect(), d.title, d.lines);
-    };
-    /* Именно addEventListener, а не onmouseenter: на этих же плитках висит
-       свой обработчик наведения (подсветка врагов в бою), и присваивание
-       затирало бы один другим. */
-    el.addEventListener("mouseenter", open);
-    el.addEventListener("mouseleave", hideTip);
-    // палец: держим полсекунды — и подсказка встаёт, не мешая обычному нажатию
-    el.addEventListener("touchstart", () => {
-      clearTimeout(holdTimer);
-      holdTimer = setTimeout(open, 450);
-    }, { passive: true });
-    el.addEventListener("touchend", hideTip);
-    el.addEventListener("touchmove", hideTip, { passive: true });
-  });
-}
-
-
-/* ===== src/ui/modals.js ===== */
-/* Модалки: оживление фото, переименование, справка. */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* Чем занят приём — короткая подпись под названием. */
-const SKILL_KIND = { damage: "урон", heal: "лечение", shield: "щит", stun: "оглушение", guard: "защита" };
-
-
-
-
-
-let openId = null;
-/* Полный список приёмов свёрнут: в карточке видна четвёрка, которая идёт в
-   бой, а девять строк раскрываются по «изменить». Состояние живёт здесь,
-   потому что карточка перерисовывается на каждый выбор. */
-let skillsOpen = false;
-
-/** Можно ли трогать набор: пятый лишний, а последний снимать нельзя. */
-function esть_проверка(есть, сейчас) {
-  if (!есть && сейчас.length >= LOADOUT) {
-    toast("В бой берут только " + LOADOUT + " приёма — сперва сними лишний", "bad");
-    return true;
-  }
-  if (есть && сейчас.length <= 1) {
-    toast("Хоть один приём чудищу нужен", "bad");
-    return true;
-  }
-  return false;
-}
-function openModal(id) {
-  openId = id;
-  $("#veil").classList.add("on");
-  $$(".modal").forEach(m => m.classList.toggle("on", m.id === id));
-}
-function closeModal() {
-  openId = null;
-  $("#veil").classList.remove("on");
-  $$(".modal").forEach(m => m.classList.remove("on"));
-}
-
-/* ---------- сборка обработчиков ---------- */
-function initModals() {
-  // общее поведение
-  $("#veil").addEventListener("click", e => { if (e.target === $("#veil")) closeModal() });
-  $$("[data-close]").forEach(b => b.onclick = closeModal);
-  addEventListener("keydown", e => {
-    if (e.key !== "Escape") return;
-    if (openId) closeModal();
-    else if (S.ghost) bus.emit("build:end");
-  });
-  bus.on("modal", id => (id ? openModal(id) : closeModal()));
-
-  // Перед списанием ресурсов всегда показываем следующий облик и конкретную
-  // пользу уровня — игрок понимает, за что платит, ещё до старта стройки.
-  let upgradeTarget = null;
-  bus.on("modal:upgrade", b => {
-    const up = upgradeOf(b);
-    if (!up) return;
-    upgradeTarget = b;
-    const next = { ...b, lvl: b.lvl + 1 };
-    const key = spriteOf(next);
-    /* Чем меряется польза от уровня, у каждого здания своё. Пещера ведёт одну
-       вылазку и на пятом уровне — растёт у неё не число мест, а глубина: на
-       каждом уровне открываются вылазки подальше и подороже. */
-    const мера = {
-      habitat: ["мест для чудищ", () => habitatLevels(b.el)[b.lvl - 1].cap,
-                () => (habitatLevels(b.el)[next.lvl - 1] || {}).cap],
-      tower:   ["мест для яиц", () => slotsOf(b), () => slotsOf(next)],
-      cave:    ["вылазок открыто", () => caveDepth(b.lvl), () => caveDepth(next.lvl)]
-    }[b.type] || ["грядок", () => slotsOf(b), () => slotsOf(next)];
-    const metric = мера[0], before = мера[1](), after = мера[2]();
-    $("#upgradeTitle").textContent = `Улучшить: ${BUILDINGS[b.type].name}`;
-    $("#upgradeBody").innerHTML = `<div class="upgrade-layout">
-      <div class="upgrade-preview"><span>УРОВЕНЬ ${next.lvl}</span>
-        <img src="${key ? ASSET_SRC[key] : ""}" alt="Следующий уровень здания"></div>
-      <div class="upgrade-result"><div class="upgrade-kicker">ПОСЛЕ УЛУЧШЕНИЯ</div>
-        <div class="upgrade-levels"><b>${b.lvl}</b><i>→</i><b>${next.lvl}</b></div>
-        <div class="upgrade-stat"><small>${metric}</small><strong>${before} <em>→</em> ${after}</strong></div>
-        <p>${BUILDINGS[b.type].desc}</p></div></div>`;
-    $("#upgradeConfirm").innerHTML = `Улучшить · ${up.cost} <img class="ic2" src="${ASSET_SRC.gold}" alt="">`;
-    openModal("mUpgrade");
-  });
-  $("#upgradeConfirm").onclick = () => {
-    if (!upgradeTarget) return;
-    const err = startUpgrade(upgradeTarget);
-    if (err) return toast(err, "bad");
-    closeModal();
-    toast("Строитель взялся за улучшение", "good");
-    upgradeTarget = null;
-  };
-  /**
-   * Карточка чудища. Одна и та же и для своего зверя, и для витрины лавки:
-   * если монстра нет (m === null), показываем вид «как он будет выглядеть».
-   * Редкость здесь главная строка — от неё зависят и статы, и аппетит, и доход,
-   * поэтому множители честно выписаны, а не спрятаны в формулах.
-   */
-  const showMonster = ({ m = null, id = null, sp = null, cost = null }) => {
-    const species = sp || speciesOf(m && m.species);
-    if (!species) return;
-    const stage = m ? monsterStage(m) : 1;
-    const stats = m ? statsAt(m) : species.base;
-    const art = m && m.kind === "photo" ? m.src : ASSET_SRC[spriteFor(species, stage)];
-    const level = m ? m.level : 1;
-    const nextStage = stageLevels(species).find(x => x > level);
-    const need = xpNeed(level, m || species), xp = m ? m.xp : 0;
-    // какие четыре приёма чудище берёт в бой прямо сейчас
-    const открытые = skillsOf(species, level);
-    const взято = m ? pickLoadout(m, открытые) : открытые.slice(0, LOADOUT);
-    const pct = Math.min(100, xp / need * 100);
-    const growth = nextStage ? `Следующий этап роста — уровень ${nextStage}` : "Максимальный этап роста";
-    const r = rarityOf(m || species);
-    const els = elementsOf(species);
-    const income = goldPerMin({ level, rarity: r.id }, stage);
-
-    $("#monsterModalTitle").innerHTML = rarityBadge(m || species, "lg")
-      + " " + esc(m ? m.name : species.name);
-
-    $("#monsterModalBody").innerHTML = `
-      <div class="mc">
-        <!-- Крупный зверь и кольцо уровня: то, ради чего карточку открывают.
-             Кольцо заодно показывает опыт до следующего уровня. -->
-        <div class="mc-hero">
-          <div class="mc-art" style="background-image:url(${art})"></div>
-          <div class="mc-ring" style="--p:${pct}%">
-            <span>${level}</span><i>УРОВЕНЬ</i>
-          </div>
-        </div>
-
-        <div class="mc-body">
-          <div class="mc-line">
-            ${els.map(e => elIcon(e, "md")).join("")}
-            <span class="mc-rar">${rarityBadge(m || species)} ${rarityName(m || species)}</span>
-          </div>
-
-          <div class="mc-xp"><i style="width:${pct}%"></i></div>
-          <div class="mc-xp-lbl"><span>${growth}</span><span>${fmt(xp)} / ${fmt(need)}</span></div>
-
-          <div class="mc-stats">
-            <div><b>${stats.hp}</b><span>ЖИЗНЬ</span></div>
-            <div><b>${stats.atk}</b><span>АТАКА</span></div>
-            <div><b>${stats.def}</b><span>ЗАЩИТА</span></div>
-            <div><b>${stats.spd}</b><span>СКОРОСТЬ</span></div>
-          </div>
-
-          <!-- Четвёрка, которая идёт в бой. Остальные приёмы прячутся за
-               «изменить»: девять строк подряд — половина прежней карточки. -->
-          <div class="mc-sk-head">В бою
-            <b id="mmSkCount">${взято.length} из ${LOADOUT}</b>
-            ${m ? `<button class="mc-more" data-more>${skillsOpen ? "свернуть" : "изменить"}</button>` : ""}
-          </div>
-          <div class="mc-slots">
-            ${Array.from({ length: LOADOUT }, (_, i) => {
-              const ab = взято[i];
-              if (!ab) return `<div class="mc-slot free">пусто</div>`;
-              const face = ab.el
-                ? `<img src="${ASSET_SRC[ELEMENTS[ab.el].icon]}" alt="">`
-                : `<span class="mc-glyph">${ab.icon || "✦"}</span>`;
-              return `<div class="mc-slot" data-tip="1" data-ab="${ab.id}">
-                ${face}<span>${esc(ab.name)}</span></div>`;
-            }).join("")}
-          </div>
-
-          <div class="mc-all" ${skillsOpen ? "" : "hidden"}>
-            <div class="mc-hint">${m
-              ? "Нажми, чтобы взять приём в бой или вернуть в запас. Подержи — подробности."
-              : "У своего чудища четвёрку можно собрать самому."}</div>
-            ${skillsOf(species).map((ab, i) => {
-              const at = skillLevel(i, species), open = level >= at;
-              const face = ab.el
-                ? `<img src="${ASSET_SRC[ELEMENTS[ab.el].icon]}" alt="">`
-                : `<span class="mm-sk-glyph">${ab.icon || "✦"}</span>`;
-              const взят = взято.some(x => x.id === ab.id);
-              const тег = m && open ? "button" : "div";
-              return `<${тег} class="mm-skill k-${ab.kind} ${open ? "" : "shut"} ${взят ? "on" : ""}"
-                  data-tip="1" data-ab="${ab.id}" ${m && open ? "" : "disabled"}>
-                <span class="mm-sk-ic">${face}</span>
-                <div><b>${esc(ab.name)}</b>
-                  <small>${SKILL_KIND[ab.kind] || ""}${ab.cost ? " · " + ab.cost + " сил" : " · бесплатно"}${ab.cd ? " · раз в " + ab.cd : ""}</small></div>
-                <span class="mm-sk-lv">${!open ? "с " + at + " ур." : взят ? "в бою" : "в запасе"}</span>
-              </${тег}>`;
-            }).join("")}
-          </div>
-
-          ${m ? `<button class="b hot big" id="monsterFeed">Кормить · ${feedCost(m)}
-            <img class="ic2" src="${ASSET_SRC.food}" alt="апельсины"></button>` : ""}
-          ${cost != null ? `<button class="b gold big" id="monsterBuy">Купить яйцо · ${fmt(cost)}</button>` : ""}
-
-          <details class="mc-det">
-            <summary>Подробности</summary>
-            <div class="mc-det-in">
-              <div><span>Доход в логове</span><b>${income.toFixed(1)} / мин</b></div>
-              <div><span>Живёт в логове</span><b class="mm-home">${els.map(e => elIcon(e, "md")).join("")}</b></div>
-              <div><span>Редкость даёт</span><b>сила ×${r.power.toFixed(2)} · доход ×${r.gold.toFixed(2)}</b></div>
-              <div><span>Аппетит</span><b>×${r.food.toFixed(2)}</b></div>
-              ${m ? `<button class="b go" id="monsterFeed5">Кормить ×5 · ${feedCost(m) * 5}
-                <img class="ic2" src="${ASSET_SRC.food}" alt="апельсины"></button>
-                <button class="b sm" id="monsterSell">Продать · ${fmt(priceOf(m))}
-                <img class="ic2" src="${ASSET_SRC.gold}" alt="золото"></button>` : ""}
-            </div>
-          </details>
-        </div>
-      </div>`;
-
-    openModal("mMonster");
-
-    /* Подробный разбор приёма — по наведению и по долгому нажатию. Он один и
-       тот же и здесь, и в бою: объяснение живёт в data/abilities.js. */
-    const карточка = $("#mMonster");
-    attachTips(карточка, el => {
-      const ab = открытые.find(x => x.id === el.dataset.ab)
-        || skillsOf(species).find(x => x.id === el.dataset.ab);
-      return ab && { title: ab.name, lines: explain(ab) };
-    });
-
-    /* Выбор четвёрки: нажатие берёт приём в бой или возвращает в запас.
-       Пятый не влезет, последний снять нельзя — иначе чудищу нечем ходить. */
-    if (m) карточка.querySelectorAll("[data-ab]:not([disabled])").forEach(btn => {
-      btn.onclick = () => {
-        const id = btn.dataset.ab;
-        const сейчас = pickLoadout(m, открытые).map(a => a.id);
-        const есть = сейчас.includes(id);
-        if (esть_проверка(есть, сейчас)) return;
-        m.loadout = есть ? сейчас.filter(x => x !== id) : [...сейчас, id];
-        persist();
-        hideTip();
-        showMonster({ m, id, sp, cost });          // перерисовываем карточку
-        bus.emit("ui:sheet");
-      };
-    });
-
-    const more = карточка.querySelector("[data-more]");
-    if (more) more.onclick = () => {
-      skillsOpen = !skillsOpen;
-      showMonster({ m, id, sp, cost });
-    };
-
-    const buy = $("#monsterBuy");
-    if (buy) buy.onclick = () => { closeModal(); bus.emit("shop:buySpecies", { id, sp: species, cost }) };
-
-    // продажа спрашивает подтверждение: карточка открывается одним касанием,
-    // и промахнуться по кнопке легче, чем кажется
-    arm($("#monsterSell"), "Точно продать?", () => {
-      const price = sellMonster(m);
-      closeModal();
-      if (price != null) bus.emit("toast", { text: m.name + " продан за " + fmt(price) + " золота", kind: "good" });
-    });
-
-    const ate = res => {
-      if (typeof res === "string") return toast(res, "bad");
-      if (res && res.levelUp) toast(`${m.name} вырос до ${res.levelUp} уровня`, "good");
-      showMonster({ m });                       // обновляем карточку на месте
-    };
-    const feedBtn = $("#monsterFeed");
-    if (feedBtn) feedBtn.onclick = () => ate(feed(m));
-    const feed5 = $("#monsterFeed5");
-    if (feed5) feed5.onclick = () => {
-      const { done, levelUp } = feedMany(m, 5);
-      ate(done ? (levelUp ? { levelUp } : null) : "Не хватает апельсинов — посади урожай на ферме");
-    };
-  };
-
-  bus.on("modal:monster", m => showMonster({m})); bus.on("modal:species", x => showMonster(x));
-
-  // переименование
-  let renameTarget = null;
-  bus.on("modal:rename", m => {
-    renameTarget = m;
-    $("#rName").value = m.name;
-    openModal("mRen");
-    setTimeout(() => $("#rName").select(), 40);
-  });
-  $("#rOk").onclick = () => {
-    const v = $("#rName").value.trim();
-    if (v && renameTarget) {
-      renameTarget.name = v;
-      renameTarget._th = makeThumb(renameTarget);
-      persist();
-      bus.emit("ui:sheet");
-    }
-    closeModal();
-  };
-  $("#rName").addEventListener("keydown", e => { if (e.key === "Enter") $("#rOk").click() });
-
-  // справка
-  $("#helpBtn").onclick = () => openModal("mHelp");
 }
 
 
@@ -12694,6 +12969,7 @@ function initAdventure() {
 
 
 
+
 /* ---------- загрузка сохранения или новая игра ---------- */
 let seenAt = 0;                     // когда игрок заходил в прошлый раз
 
@@ -12966,6 +13242,7 @@ async function boot() {
   initHud();
   initShop();
   initSheets();
+  initGrow();
   initModals();
   initBattleUi();
   initLevel();
