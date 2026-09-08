@@ -2326,6 +2326,20 @@ button,input,select{font:inherit}button{touch-action:manipulation}button:focus-v
 .qt-info small{color:#a9c5c6}
 .qt-state{color:#a9c5c6}
 
+/* ================= всплывающие сообщения =================
+
+   #toast{color:#f4e8c7} задаёт цвет текста для всплывашек, но сами пилюли
+   .tst / .tst.good / .tst.bad остались с прежним светлым бежево-зелёным и
+   бежево-розовым градиентом — светлый текст на светлом фоне не читался
+   совсем (баг задели все тосты игры, не только у заданий: и «покормлен»,
+   и «не хватает золота», и награды за бой). Красим тем же способом, что и
+   остальные пилюли скина: нейтральную — тем же тоном, что у карточек
+   заданий, хорошую — приглушённой зеленью подсказки .hint-go, плохую —
+   приглушённым кирпичным .b.hot. */
+.tst{background:linear-gradient(180deg,#2a5460,#143643); border-color:#7a9b9c; color:#f4e8c7}
+.tst.good{border-color:#89ac8d; background:linear-gradient(180deg,#345c48,#1d3a2c)}
+.tst.bad{border-color:#cb9281; background:linear-gradient(180deg,#5a3d38,#3a2420)}
+
 </style>
 </head>
 <body>
