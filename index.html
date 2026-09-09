@@ -3414,26 +3414,26 @@ function setZoom(z, ax, ay) {
 }
 
 /**
- * Не даём улететь от островов дальше, чем на три четверти экрана. Держимся
- * ближайшей плиты: пока едешь от одной к другой, ограничение перехватывает
- * та, к которой ты уже ближе, — поэтому между островами камера идёт свободно.
+ * Ограничиваем камеру общей картой всех островов, а не ближайшей плитой.
+ * Это даёт спокойно осматривать удалённые острова при сильном приближении,
+ * но всё ещё не позволяет уехать в бесконечную пустоту.
  */
 function clampCam() {
-  const mid = view.W / 2, midY = view.H / 2;
   const plots = allPlots();
   if (!plots.length) return;
-  let c = P(plots[0].cx, plots[0].cy), best = Infinity;
-  for (const p of plots) {
-    const w = P(p.cx, p.cy), s = worldToScreen(w.x, w.y);
-    const d = Math.hypot(s.x - mid, s.y - midY);
-    if (d < best) { best = d; c = w }
-  }
-  const s = worldToScreen(c.x, c.y);
-  const mx = view.W * 0.75, my = view.H * 0.75;
-  if (s.x < view.W / 2 - mx) cam.x += view.W / 2 - mx - s.x;
-  if (s.x > view.W / 2 + mx) cam.x -= s.x - (view.W / 2 + mx);
-  if (s.y < view.H / 2 - my) cam.y += view.H / 2 - my - s.y;
-  if (s.y > view.H / 2 + my) cam.y -= s.y - (view.H / 2 + my);
+  const rects = plots.map(plotRect);
+  const left = Math.min(...rects.map(r => r.x));
+  const right = Math.max(...rects.map(r => r.x + r.w));
+  const top = Math.min(...rects.map(r => r.y));
+  const bottom = Math.max(...rects.map(r => r.y + r.h));
+  const padX = Math.max(view.W * 1.25, 420);
+  const padY = Math.max(view.H * 1.25, 420);
+  const sx0 = cam.x + left * cam.z, sx1 = cam.x + right * cam.z;
+  const sy0 = cam.y + top * cam.z, sy1 = cam.y + bottom * cam.z;
+  if (sx1 < -padX) cam.x += -padX - sx1;
+  if (sx0 > view.W + padX) cam.x -= sx0 - (view.W + padX);
+  if (sy1 < -padY) cam.y += -padY - sy1;
+  if (sy0 > view.H + padY) cam.y -= sy0 - (view.H + padY);
 }
 
 /**
