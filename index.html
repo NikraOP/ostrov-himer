@@ -2786,6 +2786,7 @@ const ASSET_SRC = {
   orbitron1: "assets/МонстрОрбитронЭтап1.png", orbitron2: "assets/МонстрОрбитронЭтап2.png", orbitron3: "assets/МонстрОрбитронЭтап3.png", orbitron4: "assets/МонстрОрбитронЭтап4.png",
   vesperonEgg: "assets/МонстрВесперонЭтапЯйцо.png",
   vesperon1: "assets/МонстрВесперонЭтап1.png", vesperon2: "assets/МонстрВесперонЭтап2.png", vesperon3: "assets/МонстрВесперонЭтап3.png", vesperon4: "assets/МонстрВесперонЭтап4.png",
+  elDark: "assets/ИконкаСтихияТьма.png",
   habDark1: "assets/ЛоговоТьмыУровень1.png",
   habDark2: "assets/ЛоговоТьмыУровень2.png",
   habDark3: "assets/ЛоговоТьмыУровень3.png",
@@ -4185,7 +4186,7 @@ const ELEMENTS = {
      game/state.js не селить такое чудище больше никуда (placeMonster). */
   dark: {
     name: "Тьма", color: "#6A49B6", hue: 262, skill: "Сумеречный разрез", beats: "fire",
-    ground: "#8871BF", icon: "",
+    ground: "#8871BF", icon: "elDark",
     sprites: ["habDark1", "habDark2", "habDark3"], cost: 1800,
     levels: [
       { cap: 2, gold: 9000, up: 16200, upMs: 12 * 60e3 },
@@ -4907,7 +4908,7 @@ const S = {
   mons: [],
   team: [],         // id чудищ, которых берём в странствия (до TEAM_SIZE)
   adv: {},          // странствия: { "остров.узел": {stars, taken} } — см. game/adventure.js
-  dungeon: { fragments: {}, run: null, lvl: 1 }, // Подземелье: осколки, текущий забег и уровень островка
+  dungeon: { fragments: {}, run: null, lvl: 1, rankVersion: 2 }, // Подземелье: осколки, текущий забег и уровень островка
   dex: [],          // Чуддекс: виды, которые хоть раз были у игрока
   profile: { level: 1, xp: 0 },    // стаж хозяина острова: открывает здания и возможности
   daily: null,      // задания дня — см. game/quests.js
@@ -13442,7 +13443,9 @@ function restore() {
   S.nid = d.nid ?? 1;
   S.team = d.team || [];
   S.adv = d.adv || {};
-  S.dungeon = Object.assign({ fragments: {}, run: null, lvl: 1 }, d.dungeon || {});
+  // Ранги ввели после первых сохранений. Версия отличает их от честного 1 уровня.
+  const migrateDungeonRank = d.dungeon?.rankVersion !== 2;
+  S.dungeon = Object.assign({ fragments: {}, run: null, lvl: 1, rankVersion: 2 }, d.dungeon || {});
   S.dungeon.lvl = clamp(+S.dungeon.lvl || 1, 1, 5);
   S.dex = d.dex || [];
   S.profile = Object.assign({ level: 1, xp: 0 }, d.profile || {});
@@ -13475,6 +13478,13 @@ function restore() {
     m.u = m.tu = rnd(2.4, 0.6); m.v = m.tv = rnd(2.4, 0.6);
     return m;
   });
+  if (migrateDungeonRank) {
+    // До прокачки островка доступ определялся уровнем хозяина и силой трёх свободных чудищ.
+    const recoveredRank = DUNGEON_LEVELS.filter(lvl => profileLevel() >= lvl.need && dungeonPower() >= lvl.power).length;
+    S.dungeon.lvl = Math.max(S.dungeon.lvl, recoveredRank, 1);
+    S.dungeon.rankVersion = 2;
+    saveRaw(S);
+  }
   return true;
 }
 
