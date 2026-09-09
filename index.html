@@ -2487,7 +2487,12 @@ html,body,#app{touch-action:none}
 .breed-active{display:flex;align-items:center;gap:8px;margin:0 0 12px;padding:10px;overflow-x:auto;border:1px solid #678c82;border-radius:15px;background:#0b2c39}.breed-active-parent{display:grid;grid-template-columns:46px minmax(70px,1fr);align-items:center;gap:7px;min-width:125px;color:#f0e5c8;font-size:12px}.breed-active-parent span{width:46px;height:46px;border:1px solid #71968a;border-radius:11px;background:#173e49 center/contain no-repeat}.breed-active>i{font-style:normal;font-size:22px;font-weight:900;color:#e8c983}.breed-active .breed-outcomes{flex:none}
 @media(max-width:640px){#sheet.breed-sheet .hd{margin:-16px -16px 14px;padding:12px 16px}.breed-active{gap:6px;padding:8px}.breed-active-parent{grid-template-columns:38px minmax(58px,1fr);min-width:98px;font-size:10px}.breed-active-parent span{width:38px;height:38px}.breed-active>i{font-size:18px}.breed-active .breed-outcome{min-width:104px}}
 .exp-pick-face{display:grid!important;place-items:center;overflow:hidden}.exp-pick-face img{display:block;width:100%;height:100%;object-fit:contain}
-</style>
+
+/* Цепочка разведения листается пальцем по горизонтали, не влияя на масштаб страницы. */
+html,body,#app{touch-action:pan-x pan-y}
+#cv,#dock,#dock *,#top,#top *{touch-action:none}
+#sheet,#shop,.modal,.bteam-card,.bover-card{touch-action:pan-x pan-y}
+.breed-active,.breed-equation{touch-action:pan-x;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}</style>
 </head>
 <body>
 
@@ -8550,7 +8555,8 @@ function startTeamBattle({ enemies = [], title = "Бой", reward = {}, onEnd = 
   for (const m of [...team, ...foes]) {
     m.mode = "idle"; m._guard = false; m._fell = false;
     m._cd = {}; m._shield = 0; m._shieldTurns = 0; m._stun = 0;
-    m._sta = STAMINA.max;            // в бой выходят полными сил
+    m.hp = statsAt(m).hp;             // каждый бой начинается с полного здоровья
+    m._sta = STAMINA.max;             // и полной энергии
   }
   S.battle = {
     team, foes, title, reward, onEnd,
@@ -10440,6 +10446,10 @@ function lineageView(node, b) {
 }
 
 function breedingSheet(node, b) {
+  // Таймер кладки перерисовывает лист раз в секунду. Запоминаем прокрутку,
+  // чтобы свайп по цепочке родителей не возвращал игрока в начало.
+  const scrollRow = node.querySelector(".breed-active, .breed-equation");
+  const savedScrollLeft = scrollRow ? scrollRow.scrollLeft : 0;
   const pick = S.sheet.pick || {};
   const a = monsterById(pick.a), c = monsterById(pick.b);
 
@@ -10470,6 +10480,8 @@ function breedingSheet(node, b) {
         ${sellBtn()}
         </div>`;
 
+    const activeRow = node.querySelector(".breed-active");
+    if (activeRow) activeRow.scrollLeft = savedScrollLeft;
     const on = (sel, fn) => { const n = node.querySelector(sel); if (n) n.onclick = fn };
     on('[data-act="takeegg"]', () => { const err = takeEgg(b); if (err) toast(err, "bad"); else render() });
     on('[data-act="rushbreed"]', () => {
@@ -10526,6 +10538,8 @@ function breedingSheet(node, b) {
         ${sellBtn()}
       </div>`;
 
+  const equationRow = node.querySelector(".breed-equation");
+  if (equationRow) equationRow.scrollLeft = savedScrollLeft;
   $$("#sheet [data-parent]").forEach(btn =>
     btn.onclick = () => openView("parent", btn.dataset.parent));
   node.querySelector('[data-act="breed"]').onclick = () => {
