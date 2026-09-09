@@ -4908,7 +4908,7 @@ const S = {
   mons: [],
   team: [],         // id чудищ, которых берём в странствия (до TEAM_SIZE)
   adv: {},          // странствия: { "остров.узел": {stars, taken} } — см. game/adventure.js
-  dungeon: { fragments: {}, run: null, lvl: 1, rankVersion: 2 }, // Подземелье: осколки, текущий забег и уровень островка
+  dungeon: { fragments: {}, run: null, lvl: 1 }, // Подземелье: осколки, текущий забег и уровень островка
   dex: [],          // Чуддекс: виды, которые хоть раз были у игрока
   profile: { level: 1, xp: 0 },    // стаж хозяина острова: открывает здания и возможности
   daily: null,      // задания дня — см. game/quests.js
@@ -13443,9 +13443,7 @@ function restore() {
   S.nid = d.nid ?? 1;
   S.team = d.team || [];
   S.adv = d.adv || {};
-  // Ранги ввели после первых сохранений. Версия отличает их от честного 1 уровня.
-  const migrateDungeonRank = d.dungeon?.rankVersion !== 2;
-  S.dungeon = Object.assign({ fragments: {}, run: null, lvl: 1, rankVersion: 2 }, d.dungeon || {});
+  S.dungeon = Object.assign({ fragments: {}, run: null, lvl: 1 }, d.dungeon || {});
   S.dungeon.lvl = clamp(+S.dungeon.lvl || 1, 1, 5);
   S.dex = d.dex || [];
   S.profile = Object.assign({ level: 1, xp: 0 }, d.profile || {});
@@ -13478,13 +13476,6 @@ function restore() {
     m.u = m.tu = rnd(2.4, 0.6); m.v = m.tv = rnd(2.4, 0.6);
     return m;
   });
-  if (migrateDungeonRank) {
-    // До прокачки островка доступ определялся уровнем хозяина и силой трёх свободных чудищ.
-    const recoveredRank = DUNGEON_LEVELS.filter(lvl => profileLevel() >= lvl.need && dungeonPower() >= lvl.power).length;
-    S.dungeon.lvl = Math.max(S.dungeon.lvl, recoveredRank, 1);
-    S.dungeon.rankVersion = 2;
-    saveRaw(S);
-  }
   return true;
 }
 
