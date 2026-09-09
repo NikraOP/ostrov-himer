@@ -3562,7 +3562,7 @@ const homeById = id => HOMES[id] || HOMES.home;
 const HOME_ANCHORS = Object.fromEntries(HOME_KEYS.map(id => [id, {
   cx: HOMES[id].cx, cy: HOMES[id].cy
 }]));
-const HOME_LAYOUT_VERSION = 1;
+const HOME_LAYOUT_VERSION = 2;
 
 /** Остров, с которого начинается игра. */
 const FIRST_HOME = "home";
@@ -3595,14 +3595,14 @@ function syncHomeUpgrade(id = FIRST_HOME, moveContents = false) {
   p.image = u.image; p.R = u.R; p.k = u.k;
 
   /* В проекции ромба радиус по диагонали меньше R. Берём его вместе с
-     радиусом соседней плиты и оставляем десять клеток чистого неба: зазор
+     радиусом соседней плиты и оставляем двадцать шесть клеток чистого неба: зазор
      сохраняется даже у третьего, самого большого уровня острова. */
   const ownDiagonal = p.R / Math.pow(2, 1 / p.N);
   for (const siblingId of HOME_KEYS) {
     if (siblingId === FIRST_HOME) continue;
     const sibling = HOMES[siblingId], anchor = HOME_ANCHORS[siblingId];
     const siblingDiagonal = sibling.R / Math.pow(2, 1 / sibling.N);
-    const minimum = Math.ceil(ownDiagonal + siblingDiagonal + 10);
+    const minimum = Math.ceil(ownDiagonal + siblingDiagonal + 26);
     const baseDx = anchor.cx - HOME_ANCHORS[FIRST_HOME].cx;
     const baseDy = anchor.cy - HOME_ANCHORS[FIRST_HOME].cy;
     const dx = Math.sign(baseDx) * Math.max(Math.abs(baseDx), minimum);
@@ -3678,8 +3678,8 @@ function serialize(state) {
     // запуске считается, что успело произойти без него (game/away.js)
     seenAt: Date.now(),
     gold: state.gold, food: state.food, crystals: state.crystals, nid: state.nid,
-    team: state.team, adv: state.adv, dex: state.dex,
-    isle: state.isle, homes: state.homes, profile: state.profile, daily: state.daily,
+    team: state.team, adv: state.adv, dex: state.dex, dungeon: state.dungeon,
+    isle: state.isle, homes: state.homes, homeLevels: state.homeLevels, homeLayout: state.homeLayout, profile: state.profile, daily: state.daily,
     builds: state.builds.map(b => ({
       id: b.id, type: b.type, el: b.el, i: b.i, j: b.j, lvl: b.lvl, isle: b.isle,
       gold: b.gold, goldT: b.goldT, slots: b.slots, eggs: b.eggs, breed: b.breed,
@@ -13701,7 +13701,13 @@ async function boot() {
   catch (e) { console.warn("картинки Мастерской не подхватились:", e) }
 
   if (!restore()) newGame();
-  syncHomeUpgrade(FIRST_HOME, S.homeLayout !== HOME_LAYOUT_VERSION);
+  // Центры островов пересчитываем на каждом старте, но здания сдвигаются только
+  // в момент реального улучшения. Иначе после перезапуска они уезжали повторно.
+  syncHomeUpgrade(FIRST_HOME, false);
+  if (S.homeLayout !== HOME_LAYOUT_VERSION) {
+    S.homeLayout = HOME_LAYOUT_VERSION;
+    persist();
+  }
   relocateStrays();     // плиту могли подвинуть — возвращаем её добро на место
   seedPlots();          // на новых плитах должны стоять деревья, даже у старых сохранений
   // старые сохранения Чуддекса не знали: открываем страницы по тем, кто уже
