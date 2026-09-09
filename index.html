@@ -2469,6 +2469,14 @@ button,input,select{font:inherit}button{touch-action:manipulation}button:focus-v
 .crop.no{opacity:.6}
 
 </style>
+<style>
+/* Сад и бой: отдельная иерархия, без наложений шапки и тёмной полосы. */
+#sheet.breed-sheet{scroll-padding-top:72px}
+#sheet.breed-sheet .hd{position:sticky;top:0;isolation:isolate}
+#sheet.breed-sheet .hd:after{content:"";position:absolute;left:0;right:0;bottom:-14px;height:14px;background:linear-gradient(#0d2b39,transparent);pointer-events:none;z-index:-1}
+.mrow.busy,.brow.busy{opacity:.56;filter:saturate(.55);cursor:not-allowed}.mrow.busy .mt,.brow.busy .brow-info small:first-of-type{color:#efc99d}
+.breed-parent-slot{display:grid!important;grid-template-columns:54px 1fr;align-items:center;gap:10px}.breed-parent-face,.breed-equation-face{display:grid;width:54px;height:54px;place-items:center;border:1px solid #73978c;border-radius:12px;background:#0e303e center/contain no-repeat;color:#d6c18d;font-size:26px;font-weight:900}.breed-equation{display:flex;align-items:center;gap:9px;min-height:78px;margin:0 0 12px;padding:10px 12px;overflow:auto;border:1px solid #60877e;border-radius:15px;background:#0b2b38}.breed-equation>i{font-style:normal;color:#edcf8d;font-size:25px;font-weight:900}.breed-outcomes{display:flex;align-items:stretch;gap:8px}.breed-outcome{display:grid;grid-template-columns:42px 1fr;grid-template-rows:1fr 1fr;min-width:130px;padding:4px 7px;border:1px solid #6e9588;border-radius:10px;background:#174451;color:#f0edda}.breed-outcome img{grid-row:span 2;width:42px;height:42px;object-fit:contain}.breed-outcome b{align-self:end;font-size:11px}.breed-outcome small{align-self:start;color:#e7ce8c;font-size:10px}.breed-outcome.unknown{display:flex;flex-direction:column;justify-content:center}.breed-history-row{display:grid;grid-template-columns:minmax(0,1fr) 18px minmax(0,1fr) auto;gap:8px;align-items:center;margin-bottom:9px;padding:9px 12px;border:1px solid #587d78;border-radius:13px;background:#153946}.breed-history-parent{display:flex;min-width:0;align-items:center;gap:8px}.breed-history-parent span{width:42px;height:42px;flex:none;border-radius:10px;background:#234b55 center/contain no-repeat}.breed-history-parent b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#f2ead2;font-size:12px}.breed-history-row>i{font-style:normal;color:#efce8b;font-weight:900;font-size:19px}.breed-history-row>small{color:#afc9c7;font-size:10px;white-space:nowrap}.bexit{position:absolute!important;z-index:4;top:max(12px,env(safe-area-inset-top));left:max(12px,env(safe-area-inset-left));min-height:40px;padding:8px 13px;background:#163b49!important;border-color:#7e9d8d!important;color:#f1e3c2!important}.bbar{background:transparent!important}.brow.busy{pointer-events:none}@media(max-width:640px){#sheet.breed-sheet .hd{margin:-16px -16px 16px}.breed-equation{gap:6px;padding:8px}.breed-equation-face{width:42px;height:42px}.breed-outcome{min-width:110px;grid-template-columns:34px 1fr}.breed-outcome img{width:34px;height:34px}.breed-history-row{grid-template-columns:minmax(0,1fr) 14px minmax(0,1fr);gap:5px}.breed-history-row>small{grid-column:1/-1;text-align:right}.breed-history-parent span{width:36px;height:36px}.bexit{top:max(8px,env(safe-area-inset-top));left:max(8px,env(safe-area-inset-left));min-height:36px;padding:6px 10px;font-size:11px}}
+</style>
 </head>
 <body>
 
@@ -4755,11 +4763,12 @@ const TEAM_SIZE = 3;
 const teamMonsters = () =>
   (S.team || []).map(id => S.mons.find(m => m.id === id)).filter(Boolean);
 
-/** Убрать из отряда тех, кого продали или отпустили. */
+/** Убрать из отряда тех, кого продали или отпустили.
+ * Занятые остаются отмеченными в составе: они вернутся в те же слоты, когда
+ * закончат дело, но в сам бой не попадут. */
 function syncTeam() {
   S.team = (S.team || []).filter(id => S.mons.some(m => m.id === id)).slice(0, TEAM_SIZE);
-  // отряд пуст, а чудища есть — берём первых, чтобы «В бой» не упирался в пустоту
-  if (!S.team.length) S.team = S.mons.slice(0, TEAM_SIZE).map(m => m.id);
+  if (!S.team.length) S.team = S.mons.filter(m => !monsterBusyInfo(m)).slice(0, TEAM_SIZE).map(m => m.id);
 }
 
 /* ---------- профиль ---------- */
@@ -6933,7 +6942,8 @@ function breedProblem(garden, a, b) {
   if (!a || !b) return "Нужны двое родителей";
   if (a.id === b.id) return "Нужны двое разных монстров";
   if (garden.breed) return "Пара уже занята садом";
-  if (busyElsewhere(a) || busyElsewhere(b)) return "Один из них уже в саду";
+  const busy = monsterBusyInfo(a) || monsterBusyInfo(b);
+  if (busy) return "Один из родителей занят: " + busy.text;
   return null;
 }
 
@@ -8105,9 +8115,23 @@ const onExpedition = m =>
 const onBreeding = m =>
   !!m && S.builds.some(b => b.breed && (b.breed.a === m.id || b.breed.b === m.id));
 
+/** Единый статус занятости для всех экранов и правил игры. */
+function monsterBusyInfo(m) {
+  if (!m) return null;
+  const garden = S.builds.find(b => b.breed && (b.breed.a === m.id || b.breed.b === m.id));
+  if (garden) return { kind: "breeding", text: "в саду разведения" };
+  const cave = S.builds.find(b => b.exp && (b.exp.mons || []).includes(m.id));
+  if (cave) {
+    const exp = expeditionById(cave.exp.id);
+    return { kind: "expedition", text: "в экспедиции: " + (exp ? exp.name : "вылазка") };
+  }
+  return null;
+}
+const monsterAvailable = m => !monsterBusyInfo(m);
+
 /** Кого вообще можно отправить: свободных от вылазок и от сада разведения. */
 const freeForExpedition = () =>
-  S.mons.filter(m => m.kind === "species" && !onExpedition(m) && !onBreeding(m));
+  S.mons.filter(m => m.kind === "species" && monsterAvailable(m));
 
 /**
  * Что принесёт эта тройка. Считает и показывает интерфейс, и сама отправка —
@@ -8153,7 +8177,8 @@ function startExpedition(cave, expId, mons) {
     dur: exp.ms, readyAt: Date.now() + exp.ms,
     take: { gold: итог.gold, food: итог.food, crystals: итог.crystals }
   };
-  syncTeam();                       // ушедшие в поход выпадают из отряда
+  // Состав запоминается, но в бою эти чудища помечаются как занятые.
+  syncTeam();
   bus.emit("ui:sheet"); persist();
   return null;
 }
@@ -8493,8 +8518,8 @@ function makeFoe(desc) {
  */
 function startTeamBattle({ enemies = [], title = "Бой", reward = {}, onEnd = null } = {}) {
   syncTeam();
-  // ушедшие в вылазку в бою не участвуют: они сейчас в пещере
-  const team = teamMonsters().filter(m => !onExpedition(m)).slice(0, TEAM_SIZE);
+  // В бой идут только свободные: экспедиция и кладка бронируют чудище.
+  const team = teamMonsters().filter(monsterAvailable).slice(0, TEAM_SIZE);
   if (!team.length) {
     bus.emit("toast", { text: "Сначала выведи чудище в башне высиживания", kind: "bad" });
     return false;
@@ -8524,6 +8549,11 @@ function startTeamBattle({ enemies = [], title = "Бой", reward = {}, onEnd = 
 /** Одиночная стычка с кнопки «В бой» в карточке чудища. */
 function startSkirmish(m) {
   if (!m) return false;
+  const busy = monsterBusyInfo(m);
+  if (busy) {
+    bus.emit("toast", { text: m.name + " сейчас занят: " + busy.text, kind: "bad" });
+    return false;
+  }
   const st = statsAt(m);
   if (m.hp < st.hp * 0.3) {
     bus.emit("toast", { text: "Слишком мало сил — покорми его", kind: "bad" });
@@ -9893,11 +9923,12 @@ function head(title, extra = "") {
 }
 function render() {
   const node = el();
-  if (!S.sheet) { node.classList.remove("on"); node.classList.remove("wide"); return }
+  if (!S.sheet) { node.classList.remove("on"); node.classList.remove("wide"); node.classList.remove("breed-sheet"); return }
   node.classList.add("on");
   // схема родства — единственный экран, которому нужна вся ширина
   node.classList.toggle("wide", !!(S.sheet.view && S.sheet.view.name === "lineage"));
   node.classList.toggle("lineage-screen", S.sheet.kind === "build" && S.sheet.view?.name === "lineage");
+  node.classList.toggle("breed-sheet", S.sheet.kind === "build" && S.builds.find(x => x.id === S.sheet.id)?.type === "breeding");
 
   if (S.sheet.kind === "obstacle") {
     const o = S.obstacles.find(x => x.id === S.sheet.id);
@@ -10292,7 +10323,15 @@ function breedingHome(node, b) {
   $$("#sheet [data-breed-menu]").forEach(btn => btn.onclick = () => { const n = btn.dataset.breedMenu; if (n === "repeat") { const last = b.breedHistory && b.breedHistory[0], a = last && monsterById(last.a), c = last && monsterById(last.b); if (!a || !c) return toast("Нет сохранённой пары для повтора", "bad"); const err = startBreeding(b, a, c); if (err) return toast(err, "bad"); toast("Повторяем последнюю пару", "good"); return render() } S.sheet.view = { name:n }; render() });
 }
 function breedingHistoryView(node, b) {
-  const rows = (b.breedHistory || []).map(x => `<div class="mrow"><div class="th" style="display:grid;place-items:center">♥</div><div><div class="nm">${esc(x.aName)} + ${esc(x.bName)}</div><div class="mt">${new Date(x.at).toLocaleDateString("ru-RU")}</div></div></div>`).join("");
+  const rows = (b.breedHistory || []).map(x => {
+    const a = monsterById(x.a), c = monsterById(x.b);
+    return `<div class="breed-history-row">
+      <div class="breed-history-parent"><span style="background-image:url(&quot;${monsterPortrait(a)}&quot;)"></span><b>${esc(x.aName || (a && a.name) || "?")}</b></div>
+      <i>+</i>
+      <div class="breed-history-parent"><span style="background-image:url(&quot;${monsterPortrait(c)}&quot;)"></span><b>${esc(x.bName || (c && c.name) || "?")}</b></div>
+      <small>${new Date(x.at).toLocaleDateString("ru-RU")}</small>
+    </div>`;
+  }).join("");
   node.innerHTML = head("История выведения", `<span class="hint">кладок: ${(b.breedHistory || []).length}</span>`) + (rows || `<div class="empty">Скрести первую пару — здесь появится история.</div>`) + `<div class="rowb"><button class="b sm" data-act="back-history">Назад</button></div>`;
   node.querySelector('[data-act="back-history"]').onclick = () => { S.sheet.view = null; render() };
 }
@@ -10425,9 +10464,9 @@ function breedingSheet(node, b) {
   }
 
   // выбор пары
-  const slot = (key, m, num) => `<button class="slot free" data-parent="${key}">
-      <div class="n">Родитель ${num}</div>
-      <div class="d">${m ? esc(m.name) + " · ур. " + m.level : "выбрать монстра"}</div>
+  const slot = (key, m, num) => `<button class="slot free breed-parent-slot" data-parent="${key}">
+      <span class="breed-parent-face" style="background-image:url(&quot;${monsterPortrait(m)}&quot;)">${m ? "" : "?"}</span>
+      <span><div class="n">Родитель ${num}</div><div class="d">${m ? esc(m.name) + " · ур. " + m.level : "выбрать монстра"}</div></span>
     </button>`;
   const ready = a && c && a.id !== c.id;
   /* Если у пары несколько задуманных потомков и у них разные сроки, честно
@@ -10444,13 +10483,18 @@ function breedingSheet(node, b) {
       ? `Выйдет ${esc(odds[0].name)} — наверняка.`
       : `Кто выйдет: ${odds.map(o => `${esc(o.name)} — ${o.chance}%`).join(", ")}.
          Понять, кто именно, можно по сроку кладки: чем реже детёныш, тем дольше зреет.`;
+  const outcome = ready ? `<div class="breed-equation">
+      <span class="breed-equation-face" style="background-image:url(&quot;${monsterPortrait(a)}&quot;)"></span><i>+</i>
+      <span class="breed-equation-face" style="background-image:url(&quot;${monsterPortrait(c)}&quot;)"></span><i>=</i>
+      <div class="breed-outcomes">${odds ? odds.map(o => `<span class="breed-outcome"><img src="${speciesPortrait(o.species)}" alt=""><b>${esc(o.name)}</b><small>${o.chance}%</small></span>`).join("") : `<span class="breed-outcome unknown"><b>Случайный детёныш</b><small>черты обоих родителей</small></span>`}</div>
+    </div>` : "";
   const info = ready
     ? `<div class="empty">Кладка: ${when} — золота не стоит. ${исход}</div>`
     : `<div class="empty">Выбери двух разных монстров. Готовое яйцо отправится
         в башню высиживания — там нужно свободное место.</div>`;
 
   node.innerHTML = head("Сад разведения", `<span class="hint">пара свободна</span>`)
-    + `<div class="slots">${slot("a", a, 1)}${slot("b", c, 2)}</div>${info}
+    + `<div class="slots">${slot("a", a, 1)}${slot("b", c, 2)}</div>${outcome}${info}
       <div class="rowb">
         <button class="b go" data-act="breed" ${ready ? "" : "disabled"}>Свести пару</button>
         ${moveBtn()}
@@ -10481,12 +10525,11 @@ function parentView(node, b, which) {
   node.innerHTML = head("Родитель " + (which === "a" ? 1 : 2),
     `<span class="hint">монстров: ${list.length}</span>`)
     + (list.length
-        ? list.map(m => `<div class="mrow" data-mon="${m.id}" style="cursor:pointer">
+        ? list.map(m => { const busy = monsterBusyInfo(m); return `<div class="mrow ${busy ? "busy" : ""}" ${busy ? "" : `data-mon="${m.id}"`} style="cursor:${busy ? "not-allowed" : "pointer"}">
             <div class="th" style="background:url(&quot;${monsterPortrait(m)}&quot;) center/contain no-repeat"></div>
             <div style="min-width:0"><div class="nm">${rarityBadge(m)} ${esc(m.name)}</div>
-              <div class="mt">${elBadge(m)}
-                · ур. ${m.level} · этап ${monsterStage(m)}</div></div>
-          </div>`).join("")
+              <div class="mt">${busy ? "Занят: " + esc(busy.text) : elBadge(m) + " · ур. " + m.level + " · этап " + monsterStage(m)}</div></div>
+          </div>`; }).join("")
         : `<div class="empty">Монстров пока нет — выведи первого в башне высиживания.</div>`)
     + `<div class="rowb"><button class="b sm" data-act="back">Назад</button></div>`;
 
@@ -10675,21 +10718,22 @@ function expTeamView(node, b, expId) {
   if (!exp) { S.sheet.view = null; return render() }
   S.sheet.pick = (S.sheet.pick || []).filter(id => {
     const m = monsterById(id);
-    return m && !onExpedition(m);
+    return m && monsterAvailable(m);
   }).slice(0, exp.slots);
 
   const выбраны = S.sheet.pick.map(monsterById).filter(Boolean);
   const итог = previewReward(exp, выбраны);
-  const свободны = freeForExpedition();
+  const доступные = S.mons.filter(m => m.kind === "species");
 
   const строка = m => {
     const взят = S.sheet.pick.includes(m.id);
+    const busy = monsterBusyInfo(m);
     const свой = elementsOf(m).some(e => (exp.els || []).includes(e));
-    return `<button class="mrow ${взят ? "on" : ""}" data-take="${m.id}">
+    return `<button class="mrow ${взят ? "on" : ""} ${busy ? "busy" : ""}" ${busy ? "" : `data-take="${m.id}"`} ${busy ? "disabled" : ""}>
       <div class="th" style="background-image:url(&quot;${monsterPortrait(m)}&quot;)"></div>
       <div><div class="nm">${esc(m.name)} ${свой ? "★" : ""}</div>
-        <div class="mt">ур. ${m.level} · сила ${fmt(Math.round(powerOf(m)))} ${elLine2(elementsOf(m))}</div></div>
-      <div class="mt">${взят ? "идёт" : "дома"}</div>
+        <div class="mt">${busy ? "Занят: " + esc(busy.text) : "ур. " + m.level + " · сила " + fmt(Math.round(powerOf(m))) + " " + elLine2(elementsOf(m))}</div></div>
+      <div class="mt">${взят ? "идёт" : busy ? "занят" : "дома"}</div>
     </button>`;
   };
 
@@ -10706,8 +10750,8 @@ function expTeamView(node, b, expId) {
         ${итог.crystals ? `<span>${crystal}${итог.crystals}</span>` : ""}
         <em>${Math.round(итог.k * 100)}% от базовой</em>
       </div>
-      <div class="mlist">${свободны.length ? свободны.map(строка).join("")
-        : `<div class="empty">Все чудища заняты.</div>`}</div>
+      <div class="mlist">${доступные.length ? доступные.map(строка).join("")
+        : `<div class="empty">Чудищ для вылазки пока нет.</div>`}</div>
       <div class="rowb">
         <button class="b go big" data-act="exp-go" ${выбраны.length ? "" : "disabled"}>Отправить</button>
         <button class="b sm" data-act="back">Назад</button>
@@ -10806,6 +10850,7 @@ function initBattleUi() {
   btlRoot = document.createElement("div");
   btlRoot.id = "battle3";
   btlRoot.innerHTML = `
+    <button class="b bexit" id="bExit" aria-label="Выйти из боя">← Выйти</button>
     <div class="bq" id="bQueue"></div>
     <div class="bplates" id="bPlates"></div>
     <div class="blog" id="bLog"></div>
@@ -10818,6 +10863,11 @@ function initBattleUi() {
   bus.on("battle:tick", renderBattle);
   bus.on("battle:over", () => renderBattle());
   bus.on("battle:end", () => show(false));
+  $("#bExit").onclick = () => {
+    if (!S.battle) return;
+    if (S.battle.phase === "fight") flee();
+    else closeBattle();
+  };
   addEventListener("resize", () => { if (S.battle) renderBattle() });
   // Esc снимает прицел — передумал бить этим приёмом
   addEventListener("keydown", e => {
@@ -11069,11 +11119,12 @@ function renderBattleTeamPicker() {
   const rows = S.mons.map(m => {
     const st = statsAt(m);
     const n = chosen.indexOf(m.id);
-    return `<div class="brow ${n >= 0 ? "on" : ""}" data-mon="${m.id}">
+    const busy = monsterBusyInfo(m);
+    return `<div class="brow ${n >= 0 ? "on" : ""} ${busy ? "busy" : ""}" ${busy ? "" : `data-mon="${m.id}"`}>
       <span class="brow-face" style="background-image:url(&quot;${monsterPortrait(m)}&quot;)"></span>
       <div class="brow-info">
         <b>${rarityBadge(m)} ${esc(m.name)}</b>
-        <small>ур. ${m.level} · этап ${monsterStage(m)} · сила ${fmt(powerOf(m))}</small>
+        <small>${busy ? "Занят: " + esc(busy.text) : "ур. " + m.level + " · этап " + monsterStage(m) + " · сила " + fmt(powerOf(m))}</small>
         <small>${st.hp} хп · ${st.atk} атака · ${st.def} защита · ${st.spd} скорость</small>
       </div>
       <em class="brow-n">${n >= 0 ? n + 1 : ""}</em>
