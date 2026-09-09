@@ -2471,11 +2471,22 @@ button,input,select{font:inherit}button{touch-action:manipulation}button:focus-v
 </style>
 <style>
 /* Сад и бой: отдельная иерархия, без наложений шапки и тёмной полосы. */
-#sheet.breed-sheet{scroll-padding-top:72px}
-#sheet.breed-sheet .hd{position:sticky;top:0;isolation:isolate}
-#sheet.breed-sheet .hd:after{content:"";position:absolute;left:0;right:0;bottom:-14px;height:14px;background:linear-gradient(#0d2b39,transparent);pointer-events:none;z-index:-1}
+#sheet.breed-sheet{scroll-padding-top:16px}
+/* В саду шапка остаётся частью карточки: при переходе между экранами она не
+   залипает поверх первого ряда и не закрывает выбранных родителей. */
+#sheet.breed-sheet .hd{position:relative;top:auto;isolation:auto}
+#sheet.breed-sheet .hd:after{display:none}
 .mrow.busy,.brow.busy{opacity:.56;filter:saturate(.55);cursor:not-allowed}.mrow.busy .mt,.brow.busy .brow-info small:first-of-type{color:#efc99d}
 .breed-parent-slot{display:grid!important;grid-template-columns:54px 1fr;align-items:center;gap:10px}.breed-parent-face,.breed-equation-face{display:grid;width:54px;height:54px;place-items:center;border:1px solid #73978c;border-radius:12px;background:#0e303e center/contain no-repeat;color:#d6c18d;font-size:26px;font-weight:900}.breed-equation{display:flex;align-items:center;gap:9px;min-height:78px;margin:0 0 12px;padding:10px 12px;overflow:auto;border:1px solid #60877e;border-radius:15px;background:#0b2b38}.breed-equation>i{font-style:normal;color:#edcf8d;font-size:25px;font-weight:900}.breed-outcomes{display:flex;align-items:stretch;gap:8px}.breed-outcome{display:grid;grid-template-columns:42px 1fr;grid-template-rows:1fr 1fr;min-width:130px;padding:4px 7px;border:1px solid #6e9588;border-radius:10px;background:#174451;color:#f0edda}.breed-outcome img{grid-row:span 2;width:42px;height:42px;object-fit:contain}.breed-outcome b{align-self:end;font-size:11px}.breed-outcome small{align-self:start;color:#e7ce8c;font-size:10px}.breed-outcome.unknown{display:flex;flex-direction:column;justify-content:center}.breed-history-row{display:grid;grid-template-columns:minmax(0,1fr) 18px minmax(0,1fr) auto;gap:8px;align-items:center;margin-bottom:9px;padding:9px 12px;border:1px solid #587d78;border-radius:13px;background:#153946}.breed-history-parent{display:flex;min-width:0;align-items:center;gap:8px}.breed-history-parent span{width:42px;height:42px;flex:none;border-radius:10px;background:#234b55 center/contain no-repeat}.breed-history-parent b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#f2ead2;font-size:12px}.breed-history-row>i{font-style:normal;color:#efce8b;font-weight:900;font-size:19px}.breed-history-row>small{color:#afc9c7;font-size:10px;white-space:nowrap}.bexit{position:absolute!important;z-index:4;top:max(12px,env(safe-area-inset-top));left:max(12px,env(safe-area-inset-left));min-height:40px;padding:8px 13px;background:#163b49!important;border-color:#7e9d8d!important;color:#f1e3c2!important}.bbar{background:transparent!important}.brow.busy{pointer-events:none}@media(max-width:640px){#sheet.breed-sheet .hd{margin:-16px -16px 16px}.breed-equation{gap:6px;padding:8px}.breed-equation-face{width:42px;height:42px}.breed-outcome{min-width:110px;grid-template-columns:34px 1fr}.breed-outcome img{width:34px;height:34px}.breed-history-row{grid-template-columns:minmax(0,1fr) 14px minmax(0,1fr);gap:5px}.breed-history-row>small{grid-column:1/-1;text-align:right}.breed-history-parent span{width:36px;height:36px}.bexit{top:max(8px,env(safe-area-inset-top));left:max(8px,env(safe-area-inset-left));min-height:36px;padding:6px 10px;font-size:11px}}
+
+/* Блокировка браузерного масштаба: панелям оставлена только их собственная прокрутка. */
+html,body,#app{touch-action:none}
+#sheet,#shop,.modal,.bteam-card,.bover-card{touch-action:pan-y}
+.adv-scroll{touch-action:pan-x}
+#dock,#dock *,#top,#top *{touch-action:none}
+.breed-active{display:flex;align-items:center;gap:8px;margin:0 0 12px;padding:10px;overflow-x:auto;border:1px solid #678c82;border-radius:15px;background:#0b2c39}.breed-active-parent{display:grid;grid-template-columns:46px minmax(70px,1fr);align-items:center;gap:7px;min-width:125px;color:#f0e5c8;font-size:12px}.breed-active-parent span{width:46px;height:46px;border:1px solid #71968a;border-radius:11px;background:#173e49 center/contain no-repeat}.breed-active>i{font-style:normal;font-size:22px;font-weight:900;color:#e8c983}.breed-active .breed-outcomes{flex:none}
+@media(max-width:640px){#sheet.breed-sheet .hd{margin:-16px -16px 14px;padding:12px 16px}.breed-active{gap:6px;padding:8px}.breed-active-parent{grid-template-columns:38px minmax(58px,1fr);min-width:98px;font-size:10px}.breed-active-parent span{width:38px;height:38px}.breed-active>i{font-size:18px}.breed-active .breed-outcome{min-width:104px}}
+.exp-pick-face{display:grid!important;place-items:center;overflow:hidden}.exp-pick-face img{display:block;width:100%;height:100%;object-fit:contain}
 </style>
 </head>
 <body>
@@ -4763,12 +4774,15 @@ const TEAM_SIZE = 3;
 const teamMonsters = () =>
   (S.team || []).map(id => S.mons.find(m => m.id === id)).filter(Boolean);
 
-/** Убрать из отряда тех, кого продали или отпустили.
- * Занятые остаются отмеченными в составе: они вернутся в те же слоты, когда
- * закончат дело, но в сам бой не попадут. */
+/** Убрать из отряда проданных и занятых чудищ.
+ * Экспедиция и кладка освобождают слот сразу: игрок может без ручной чистки
+ * выбрать другого бойца. После возвращения чудище не добавляется само. */
 function syncTeam() {
-  S.team = (S.team || []).filter(id => S.mons.some(m => m.id === id)).slice(0, TEAM_SIZE);
-  if (!S.team.length) S.team = S.mons.filter(m => !monsterBusyInfo(m)).slice(0, TEAM_SIZE).map(m => m.id);
+  S.team = (S.team || []).filter(id => {
+    const m = S.mons.find(x => x.id === id);
+    return m && monsterAvailable(m);
+  }).slice(0, TEAM_SIZE);
+  if (!S.team.length) S.team = S.mons.filter(monsterAvailable).slice(0, TEAM_SIZE).map(m => m.id);
 }
 
 /* ---------- профиль ---------- */
@@ -6968,6 +6982,7 @@ function startBreeding(garden, a, b) {
   garden.breedHistory.unshift({ a: a.id, b: b.id, aName: a.name, bName: b.name, at: Date.now() });
   garden.breedHistory = garden.breedHistory.slice(0, 12);
   garden.breed = { a: a.id, b: b.id, dur: ms, readyAt: Date.now() + ms, egg: child };
+  syncTeam(); // родители сразу освобождают боевые слоты
   bus.emit("ui:top"); bus.emit("ui:sheet"); persist();
   return null;
 }
@@ -7544,10 +7559,11 @@ function initGestures() {
   for (const тип of ["gesturestart", "gesturechange", "gestureend"])
     document.addEventListener(тип, e => e.preventDefault(), { passive: false });
 
-  // два пальца где угодно, кроме холста, — это попытка растянуть страницу
-  document.addEventListener("touchmove", e => {
-    if (e.touches.length > 1 && !наХолсте(e.target)) e.preventDefault();
-  }, { passive: false });
+  // Ни на холсте, ни на панели браузер не должен получать щипок: камера острова
+  // обрабатывает собственные pointer-события, а масштаб страницы всегда запрещён.
+  const stopNativePinch = e => { if (e.touches.length > 1) e.preventDefault() };
+  document.addEventListener("touchstart", stopNativePinch, { passive: false });
+  document.addEventListener("touchmove", stopNativePinch, { passive: false });
 
   /* Двойного касания здесь когда-то тоже был свой запрет: два тапа ближе
      трёхсот миллисекунд гасились через preventDefault. Его пришлось убрать.
@@ -10431,9 +10447,18 @@ function breedingSheet(node, b) {
     const pa = monsterById(b.breed.a), pb = monsterById(b.breed.b);
     const left = b.breed.readyAt - Date.now();
     const pct = clamp(100 - left / b.breed.dur * 100, 0, 100);
-    node.innerHTML = head("Сад разведения",
-      `<span class="hint">${esc(pa ? pa.name : "?")} и ${esc(pb ? pb.name : "?")}</span>`)
-      + `<div class="meter f"><i style="width:${pct}%"></i>
+    const odds = pa && pb ? breedOdds(pa, pb) : null;
+    const possible = odds
+      ? odds.map(o => `<span class="breed-outcome"><img src="${speciesPortrait(o.species)}" alt=""><b>${esc(o.name)}</b><small>${o.chance}%</small></span>`).join("")
+      : `<span class="breed-outcome unknown"><b>Детёныш родителей</b><small>получит черты пары</small></span>`;
+    const pairing = `<div class="breed-active">
+      <div class="breed-active-parent"><span style="background-image:url(&quot;${monsterPortrait(pa)}&quot;)"></span><b>${esc(pa ? pa.name : "?")}</b></div>
+      <i>+</i>
+      <div class="breed-active-parent"><span style="background-image:url(&quot;${monsterPortrait(pb)}&quot;)"></span><b>${esc(pb ? pb.name : "?")}</b></div>
+      <i>=</i><div class="breed-outcomes">${possible}</div>
+    </div>`;
+    node.innerHTML = head("Сад разведения", `<span class="hint">кладка в работе</span>`)
+      + pairing + `<div class="meter f"><i style="width:${pct}%"></i>
           <b>${left > 0 ? "Кладка зреет · " + tleft(left) : "Яйцо готово"}</b></div>
         <div class="rowb">
           ${left > 0
@@ -10730,7 +10755,7 @@ function expTeamView(node, b, expId) {
     const busy = monsterBusyInfo(m);
     const свой = elementsOf(m).some(e => (exp.els || []).includes(e));
     return `<button class="mrow ${взят ? "on" : ""} ${busy ? "busy" : ""}" ${busy ? "" : `data-take="${m.id}"`} ${busy ? "disabled" : ""}>
-      <div class="th" style="background-image:url(&quot;${monsterPortrait(m)}&quot;)"></div>
+      <div class="th exp-pick-face"><img src="${monsterPortrait(m)}" alt="${esc(m.name)}"></div>
       <div><div class="nm">${esc(m.name)} ${свой ? "★" : ""}</div>
         <div class="mt">${busy ? "Занят: " + esc(busy.text) : "ур. " + m.level + " · сила " + fmt(Math.round(powerOf(m))) + " " + elLine2(elementsOf(m))}</div></div>
       <div class="mt">${взят ? "идёт" : busy ? "занят" : "дома"}</div>
