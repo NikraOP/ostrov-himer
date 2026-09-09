@@ -292,7 +292,7 @@ button{font-family:var(--ui); font-weight:800; color:var(--ink); cursor:pointer}
 .monster-stage{position:absolute;z-index:2;left:8px;bottom:8px;padding:4px 7px;border-radius:6px;background:#082c48;color:#d7fbff;font-size:10px;font-weight:900;letter-spacing:.08em}
 .monster-data{padding:10px;border:2px solid #5ecce8;border-radius:12px;background:linear-gradient(180deg,#0b3d5c,#082b47);color:#fff}
 .monster-element{font-size:13px;font-weight:900;color:#dbfbff}.monster-data .meter{background:#071d31;box-shadow:inset 0 2px 4px #020d18}.monster-data .meter b{color:white;text-shadow:0 2px 0 #07131f}.monster-data .stat4 div{background:#0c3855;box-shadow:inset 0 0 0 1px #3c9cb8;color:#fff}.monster-data .stat4 span{color:#a9e6f3}
-.monster-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 4px}.monster-meta span{padding:8px 10px;border:2px solid #55bdd7;border-radius:9px;background:#0b3a58;color:#aeeefa;font-size:9px;font-weight:900;letter-spacing:.07em}.monster-meta b{font-size:13px;color:#fff;letter-spacing:0}.monster-actions{justify-content:center}
+.monster-meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 4px}.monster-meta span{padding:8px 10px;border:2px solid #55bdd7;border-radius:9px;background:#0b3a58;color:#aeeefa;font-size:9px;font-weight:900;letter-spacing:.07em}.monster-meta b{font-size:13px;color:#fff;letter-spacing:0}.monster-actions{justify-content:center}
 #sheet .rowb{padding:4px;margin:10px 0 2px;border-radius:12px;background:rgba(3,33,55,.10)}
 #sheet .rowb .b{min-height:38px;background:linear-gradient(180deg,#55dcf5,#078ebd);border-color:#06334f;color:#fff;text-shadow:0 2px 0 #07516f;box-shadow:0 3px 0 #035174,0 5px 8px rgba(0,29,48,.2)}
 #sheet .rowb .b.go{background:linear-gradient(180deg,#a1ef8b,#3aa94c);border-color:#216a31;text-shadow:0 2px 0 #1d6c2d}
@@ -522,6 +522,15 @@ input[type=range]{width:100%; accent-color:var(--leaf-2)}
 /* строка «Редкость: Эпическое · доход ×1.85» в карточке чудища */
 .rar-line{display:flex; align-items:center; gap:7px; flex-wrap:wrap;
   font-size:11.5px; font-weight:800}
+
+/* Роль показывает, что именно чудище делает в отряде. Цвет — подсказка,
+   текст всегда остаётся рядом, чтобы значение не терялось для новичка. */
+.role-chip{display:inline-flex;align-items:center;gap:4px;max-width:max-content;padding:4px 7px;
+  border:1px solid #73b7c5;border-radius:999px;background:#10394f;color:#defaff;font-size:10px;
+  line-height:1;font-weight:900;white-space:nowrap;letter-spacing:.02em}
+.role-chip i{font-style:normal;font-size:12px;line-height:1}
+.role-chip.compact{padding:3px 6px;font-size:9px}.role-damage{border-color:#f08a71;background:#572c37;color:#ffe4dc}.role-healer{border-color:#75d98d;background:#1b4d3c;color:#dcffdf}.role-shielder{border-color:#79cce9;background:#153f58;color:#d7f5ff}.role-tank{border-color:#d8bb78;background:#4d4229;color:#fff0bf}.role-control{border-color:#c59af0;background:#412d61;color:#f1e0ff}
+.item .role-chip{align-self:center;margin:0 auto 1px}.mrow .role-chip{margin-top:4px}.monster-meta .role-chip{margin-top:3px}.mc-line .role-chip{margin-left:auto}
 
 /* карточка вида в лавке подсвечивается цветом своей ступени */
 .item.mon{border-color:color-mix(in srgb, var(--rc,#9AA6B2) 60%, var(--line))}
@@ -8006,6 +8015,45 @@ function skillsOf(sp, level) {
   return all.filter((_, i) => level >= skillLevel(i, sp));
 }
 
+/* Главная боевая роль вычисляется из настоящей лестницы приёмов, а не
+   назначается вручную. Поэтому когда автор добавляет новый вид или меняет
+   способности в Мастерской, подпись в карточках остаётся честной. */
+const SPECIALIZATION_META = {
+  damage: { name: "Дамагер", icon: "⚔", desc: "наносит основной урон команде" },
+  healer: { name: "Хилер", icon: "✚", desc: "лечит раненых союзников" },
+  shielder: { name: "Щитовик", icon: "⬡", desc: "накладывает щиты на союзников" },
+  tank: { name: "Танк", icon: "🛡", desc: "держит удар и защищает себя" },
+  control: { name: "Контролёр", icon: "✦", desc: "лишает врагов хода и задаёт темп боя" }
+};
+
+function specializationOf(subject) {
+  const sp = subject && subject.species ? speciesOf(subject.species) : subject;
+  if (!sp) return SPECIALIZATION_META.damage;
+  const list = skillsOf(sp);
+  const base = sp.base || { hp: 70, atk: 15, def: 12, spd: 12 };
+  const sum = kind => list.filter(a => a.kind === kind).reduce((n, a) => n + (+a.power || 0), 0);
+  const selfShield = list.filter(a => a.kind === "shield" && a.target === "self").reduce((n, a) => n + (+a.power || 0), 0);
+  const allyShield = list.filter(a => a.kind === "shield" && a.target !== "self").reduce((n, a) => n + (+a.power || 0), 0);
+  const stuns = list.filter(a => a.kind === "stun");
+  const controlTurns = stuns.reduce((n, a) => n + (+a.turns || 1), 0);
+  const maxHit = Math.max(0, ...list.filter(a => a.kind === "damage").map(a => +a.power || 0));
+  const scores = {
+    healer: sum("heal") * 170 + (sum("heal") >= .55 ? 38 : 0),
+    shielder: sum("shield") * 130 + allyShield * 125 + (allyShield >= .5 ? 34 : 0),
+    tank: base.hp * .28 + base.def * 3 + selfShield * 125 + list.filter(a => a.kind === "guard").length * 24,
+    control: controlTurns * 66 + stuns.length * 24,
+    damage: maxHit * 38 + base.atk * 2 + base.spd
+  };
+  const priority = ["healer", "shielder", "tank", "control", "damage"];
+  const id = priority.reduce((best, role) => scores[role] > scores[best] ? role : best, "damage");
+  return { id, ...SPECIALIZATION_META[id] };
+}
+
+function specializationChip(subject, compact = false) {
+  const role = specializationOf(subject);
+  return `<span class="role-chip role-${role.id}${compact ? " compact" : ""}" title="${role.desc}"><i>${role.icon}</i>${role.name}</span>`;
+}
+
 /**
  * До какой ступени силы дотягивается редкость. Обычному не место с лавиной,
  * легендарному — с одними подпорками. Правило проверяет tools/audit.mjs.
@@ -9359,11 +9407,14 @@ function renderMonsters() {
     const els = elementsOf(sp);
     el.innerHTML = elLine(sp) + " · " + rarityName(sp);
 
+    const role = document.createElement("div");
+    role.innerHTML = specializationChip(sp, true);
+
     const price = document.createElement("div");
     price.className = "c";
     price.innerHTML = '<img src="' + ASSET_SRC.gold + '" alt="">' + fmt(cost);
 
-    d.append(art, name, el, price);
+    d.append(art, name, el, role, price);
     d.onclick = () => bus.emit("modal:species", { id, sp, cost });
     w.append(d);
   }
@@ -9731,6 +9782,7 @@ function initModals() {
           <div class="mc-line">
             ${els.map(e => elIcon(e, "md")).join("")}
             <span class="mc-rar">${rarityBadge(m || species)} ${rarityName(m || species)}</span>
+            ${specializationChip(m || species)}
           </div>
 
           <div class="mc-xp"><i style="width:${pct}%"></i></div>
@@ -9789,6 +9841,7 @@ function initModals() {
           <details class="mc-det">
             <summary>Подробности</summary>
             <div class="mc-det-in">
+              <div><span>Боевая роль</span><b>${specializationOf(m || species).name}</b></div>
               <div><span>Доход в логове</span><b>${income.toFixed(1)} / мин</b></div>
               <div><span>Живёт в логове</span><b class="mm-home">${els.map(e => elIcon(e, "md")).join("")}</b></div>
               <div><span>Редкость даёт</span><b>сила ×${r.power.toFixed(2)} · доход ×${r.gold.toFixed(2)}</b></div>
@@ -10735,7 +10788,7 @@ function monsterRow(m) {
     <div class="th" style="background:url(&quot;${monsterPortrait(m)}&quot;) center/contain no-repeat"></div>
     <div style="min-width:0"><div class="nm">${rarityBadge(m)} ${esc(m.name)}</div>
       <div class="mt">${elBadge(m)} · ур. ${m.level}
-        · ${Math.round(m.hp)}/${st.hp} хп</div></div>
+        · ${Math.round(m.hp)}/${st.hp} хп</div>${specializationChip(m, true)}</div>
     <div class="sp">
       <button class="b sm" data-feed="${m.id}">Кормить · ${feedCost(m)} ${food}</button>
       <button class="b sm" data-feed5="${m.id}">×5</button>
@@ -10779,7 +10832,8 @@ function monsterSheet(node, m) {
             <div><b>${st.hp}</b><span>ХП</span></div><div><b>${st.atk}</b><span>Атака</span></div>
             <div><b>${st.def}</b><span>Защита</span></div><div><b>${st.spd}</b><span>Скор.</span></div></div>
         </div></div>
-      <div class="monster-meta"><span>ЛОГОВО<br><b>${home ? ELEMENTS[home.el].name : "нет"}</b></span>
+      <div class="monster-meta"><span>РОЛЬ<br>${specializationChip(m)}</span>
+        <span>ЛОГОВО<br><b>${home ? ELEMENTS[home.el].name : "нет"}</b></span>
         <span>ВЫРУЧКА<br><b>${goldPerMin(m, monsterStage(m)).toFixed(1)} / мин</b></span></div>
       <div class="rowb monster-actions">
         <button class="b go" data-act="feed">Кормить · ${feedCost(m)} ${food}</button>
