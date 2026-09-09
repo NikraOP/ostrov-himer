@@ -3555,6 +3555,14 @@ const HOME_KEYS = Object.keys(HOMES);
 const HOME_LIST = () => HOME_KEYS.map(k => HOMES[k]);
 const homeById = id => HOMES[id] || HOMES.home;
 
+/* Стартовые центры нужны как ориентир для расширяемой родной плиты. Когда
+   она вырастает, соседние острова разъезжаются по той же диагонали, иначе
+   большая картинка зелёного острова начинает накрывать их края. */
+const HOME_ANCHORS = Object.fromEntries(HOME_KEYS.map(id => [id, {
+  cx: HOMES[id].cx, cy: HOMES[id].cy
+}]));
+const HOME_LAYOUT_VERSION = 1;
+
 /** Остров, с которого начинается игра. */
 const FIRST_HOME = "home";
 
@@ -3567,11 +3575,42 @@ const HOME_UPGRADES = {
   3: { image: "islandUp3", R: 41.6, k: 4.620, cost: 300000, label: "Великий остров" }
 };
 const homeLevel = id => Math.max(1, Math.min(3, (S.homeLevels && S.homeLevels[id]) || 1));
-function syncHomeUpgrade(id = FIRST_HOME) {
+function shiftIslandContents(id, di, dj) {
+  if (!di && !dj) return;
+  for (const x of [...(S.builds || []), ...(S.obstacles || [])]) {
+    if ((x.isle || FIRST_HOME) === id) { x.i += di; x.j += dj; }
+  }
+  for (const m of S.mons || []) {
+    if ((m.isle || FIRST_HOME) !== id) continue;
+    for (const key of ["u", "v", "tu", "tv"]) if (Number.isFinite(m[key])) {
+      m[key] += key === "u" || key === "tu" ? di : dj;
+    }
+  }
+}
+function syncHomeUpgrade(id = FIRST_HOME, moveContents = false) {
   if (id !== FIRST_HOME) return;
   const p = HOMES[id], u = HOME_UPGRADES[homeLevel(id)];
   if (!p || !u) return;
   p.image = u.image; p.R = u.R; p.k = u.k;
+
+  /* В проекции ромба радиус по диагонали меньше R. Берём его вместе с
+     радиусом соседней плиты и оставляем десять клеток чистого неба: зазор
+     сохраняется даже у третьего, самого большого уровня острова. */
+  const ownDiagonal = p.R / Math.pow(2, 1 / p.N);
+  for (const siblingId of HOME_KEYS) {
+    if (siblingId === FIRST_HOME) continue;
+    const sibling = HOMES[siblingId], anchor = HOME_ANCHORS[siblingId];
+    const siblingDiagonal = sibling.R / Math.pow(2, 1 / sibling.N);
+    const minimum = Math.ceil(ownDiagonal + siblingDiagonal + 10);
+    const baseDx = anchor.cx - HOME_ANCHORS[FIRST_HOME].cx;
+    const baseDy = anchor.cy - HOME_ANCHORS[FIRST_HOME].cy;
+    const dx = Math.sign(baseDx) * Math.max(Math.abs(baseDx), minimum);
+    const dy = Math.sign(baseDy) * Math.max(Math.abs(baseDy), minimum);
+    const nextCx = p.cx + dx, nextCy = p.cy + dy;
+    if (moveContents) shiftIslandContents(siblingId, nextCx - sibling.cx, nextCy - sibling.cy);
+    sibling.cx = nextCx; sibling.cy = nextCy;
+  }
+  if (moveContents && S) S.homeLayout = HOME_LAYOUT_VERSION;
 }
 function upgradeHome() {
   const lvl = homeLevel(FIRST_HOME), next = HOME_UPGRADES[lvl + 1];
@@ -3579,7 +3618,7 @@ function upgradeHome() {
   if (S.gold < next.cost) return toast("Не хватает золота", "bad");
   S.gold -= next.cost;
   S.homeLevels[FIRST_HOME] = lvl + 1;
-  syncHomeUpgrade();
+  syncHomeUpgrade(FIRST_HOME, true);
   lookAt(HOMES[FIRST_HOME]);
   bus.emit("ui:top"); persist(); renderIsles();
   toast("Остров расширен: новые клетки появились по краям", "good");
@@ -4868,13 +4907,14 @@ const S = {
   mons: [],
   team: [],         // id чудищ, которых берём в странствия (до TEAM_SIZE)
   adv: {},          // странствия: { "остров.узел": {stars, taken} } — см. game/adventure.js
-  dungeon: { fragments: {}, run: null }, // Подземелье: осколки богоподобных яиц и текущий забег
+  dungeon: { fragments: {}, run: null, lvl: 1 }, // Подземелье: осколки, текущий забег и уровень островка
   dex: [],          // Чуддекс: виды, которые хоть раз были у игрока
   profile: { level: 1, xp: 0 },    // стаж хозяина острова: открывает здания и возможности
   daily: null,      // задания дня — см. game/quests.js
   isle: FIRST_HOME, // на какой из своих островов игрок сейчас смотрит
   homes: { [FIRST_HOME]: true },   // какие острова уже куплены
   homeLevels: { [FIRST_HOME]: 1 }, // уровень расширения каждой площадки
+  homeLayout: 0,                   // версия раскладки соседних плит
   nid: 1,           // счётчик id
   sheet: null,      // что открыто внизу: {kind:'build'|'mon'|'obstacle', id}
   ghost: null,      // здание, которое сейчас ставим
@@ -13213,19 +13253,41 @@ const DUNGEON_LEVELS = [
   { id: 5, name: "Небесный предел", rar: "godly", need: 30, art: "dungeon5", power: 2850,
     paths: [["solmaris", "Солмарис"], ["abissaron", "Абиссарон"], ["aurelion", "Аурелион"], ["noctarium", "Ноктариум"]] }
 ];
+
+/* Улучшение островка идёт последовательно, как у Пещеры экспедиций. */
+const DUNGEON_UPGRADE_COST = { 2: 50000, 3: 180000, 4: 550000, 5: 1500000 };
 let dungeonRoot = null;
 const dungeonLevel = id => DUNGEON_LEVELS.find(x => x.id === +id) || DUNGEON_LEVELS[0];
 const dungeonOpen = () => !!(dungeonRoot && dungeonRoot.classList.contains("on"));
 const dungeonFragment = id => ((S.dungeon && S.dungeon.fragments) || {})[id] || 0;
 const dungeonSprite = id => { const sp = speciesOf(id); return sp ? ASSET_SRC[spriteFor(sp, stageCount(sp))] : "" };
 
-function dungeonPower() {
-  return Math.max(0, ...S.mons.filter(monsterAvailable).map(m => Math.round((m.base.hp + m.base.atk * 2 + m.base.def) * (1 + (m.level - 1) * .07))));
+const dungeonRank = () => clamp(+((S.dungeon && S.dungeon.lvl) || 1), 1, DUNGEON_LEVELS.length);
+const dungeonFreeTeam = () => S.mons.filter(monsterAvailable).sort((a, b) => powerOf(b) - powerOf(a)).slice(0, TEAM_SIZE);
+/* Это не сила одного случайного монстра: берём три сильнейших свободных,
+   которыми игрок действительно сможет пойти в бой. Занятые кладкой и
+   экспедицией не участвуют. */
+const dungeonPower = () => dungeonFreeTeam().reduce((sum, m) => sum + powerOf(m), 0);
+function dungeonUnlockReason(lvl) {
+  if (profileLevel() < lvl.need) return `нужен ${lvl.need} ур. хозяина острова`;
+  if (dungeonPower() < lvl.power) return `нужна сила свободного отряда ${fmt(lvl.power)}`;
+  return "";
 }
 function dungeonReady(lvl) {
-  if (profileLevel() < lvl.need) return `нужен ${lvl.need} ур. острова`;
-  if (dungeonPower() < lvl.power) return `нужна сила ${fmt(lvl.power)}`;
-  return "";
+  if (lvl.id > dungeonRank()) return `улучши Подземелье до ${lvl.id} ур.`;
+  return dungeonUnlockReason(lvl);
+}
+function upgradeDungeon() {
+  const next = dungeonLevel(dungeonRank() + 1);
+  if (!next || next.id <= dungeonRank()) return toast("Подземелье уже достигло 5 уровня", "good");
+  if (S.dungeon.run) return toast("Сначала заверши текущий маршрут", "bad");
+  const reason = dungeonUnlockReason(next);
+  if (reason) return toast(`Нельзя улучшить: ${reason}`, "bad");
+  const cost = DUNGEON_UPGRADE_COST[next.id] || 0;
+  if (S.gold < cost) return toast("Не хватает золота", "bad");
+  S.gold -= cost; S.dungeon.lvl = next.id;
+  persist(); bus.emit("ui:top"); renderDungeon();
+  toast(`Подземелье улучшено до ${next.id} уровня: открыты «${next.name}»`, "good");
 }
 function dungeonEgg(id) {
   const sp = speciesOf(id);
@@ -13281,14 +13343,19 @@ function buildDungeonDom() {
   `; document.head.append(st); $("#app").append(dungeonRoot);
   dungeonRoot.querySelector("#dungeonClose").onclick = closeDungeon;
   dungeonRoot.querySelector(".dungeon-tabs").onclick = e => { const b = e.target.closest("[data-dlvl]"); if (b) { dungeonRoot.dataset.level = b.dataset.dlvl; renderDungeon(); } };
-  dungeonRoot.querySelector(".dungeon-content").onclick = e => { const b = e.target.closest("[data-dpath]"); if (b) startDungeonPath(+b.dataset.level, +b.dataset.dpath); const next = e.target.closest("[data-dnext]"); if (next) launchDungeonFight(); };
+  dungeonRoot.querySelector(".dungeon-content").onclick = e => { const b = e.target.closest("[data-dpath]"); if (b) startDungeonPath(+b.dataset.level, +b.dataset.dpath); const next = e.target.closest("[data-dnext]"); if (next) launchDungeonFight(); if (e.target.closest("[data-dupg]")) upgradeDungeon(); };
 }
 function renderDungeon() {
-  if (!dungeonRoot) return; const level = dungeonLevel(dungeonRoot.dataset.level || 1); const run = S.dungeon && S.dungeon.run;
-  dungeonRoot.querySelector(".dungeon-tabs").innerHTML = DUNGEON_LEVELS.map(x => `<button class="dungeon-tab ${x.id===level.id?"on":""} ${dungeonReady(x)?"lock":""}" data-dlvl="${x.id}">Ур. ${x.id}<br><small>${x.rar === "godly" ? "богоподобные" : x.rar === "mythic" ? "мифические" : "эпические"}</small></button>`).join("");
+  if (!dungeonRoot) return;
+  const level = dungeonLevel(dungeonRoot.dataset.level || 1), run = S.dungeon && S.dungeon.run;
+  const rank = dungeonRank(), strongest = dungeonFreeTeam(), power = dungeonPower();
+  const next = rank < DUNGEON_LEVELS.length ? dungeonLevel(rank + 1) : null;
+  dungeonRoot.querySelector(".dungeon-tabs").innerHTML = DUNGEON_LEVELS.map(x => `<button class="dungeon-tab ${x.id===level.id?"on":""} ${x.id>rank?"lock":""}" data-dlvl="${x.id}">${x.id>rank?"🔒 ":""}Ур. ${x.id}<br><small>${x.rar === "godly" ? "богоподобные" : x.rar === "mythic" ? "мифические" : "эпические"}</small></button>`).join("");
   const reason = dungeonReady(level), running = run && run.level === level.id;
-  const paths = reason ? `<div class="dungeon-lock">🔒 ${esc(reason)}<br><small>Подними уровень острова и силу свободных монстров.</small></div>` : `<div class="dungeon-paths">${level.paths.map(([id,label],i)=>{const sp=speciesOf(id), god=level.rar==="godly", active=running&&run.path===i;return `<article class="dungeon-path"><img src="${dungeonSprite(id)}" alt=""><div><b>${esc(label)}</b><small>${god?`Осколки яйца: <span class="dungeon-frag">${dungeonFragment(id)}/4</span>`:`Награда: яйцо ${esc(sp.name)}`} · 5 этапов</small>${active?`<button class="b go" data-dnext>Продолжить: ${run.stage}/5</button>`:`<button class="b hot" data-dpath="${i}" data-level="${level.id}">Войти</button>`}</div></article>`}).join("")}</div>`;
-  dungeonRoot.querySelector(".dungeon-content").innerHTML = `<section class="dungeon-hero"><img class="dungeon-art" src="${ASSET_SRC[level.art]}" alt="${esc(level.name)}"><div class="dungeon-copy">${rarityBadge(level.rar,"lg")}<h3>${esc(level.name)}</h3><p>Пять боевых этапов. Рекомендуемая сила свободного чудища: <b>${fmt(level.power)}</b>. Здесь ${level.rar === "godly" ? "нельзя вывести награду напрямую: собери 4 осколка яйца." : "за весь маршрут выдаётся яйцо стража."}</p>${running?`<div class="dungeon-run">Текущий маршрут: этап ${run.stage}/5</div>`:""}${paths}</div></section>`;
+  const paths = reason ? `<div class="dungeon-lock">🔒 ${esc(reason)}<br><small>${level.id > rank ? "Уровни открываются только по очереди через улучшение островка." : "Подними уровень хозяина и усили трёх свободных чудищ."}</small></div>` : `<div class="dungeon-paths">${level.paths.map(([id,label],i)=>{const sp=speciesOf(id), god=level.rar==="godly", active=running&&run.path===i;return `<article class="dungeon-path"><img src="${dungeonSprite(id)}" alt=""><div><b>${esc(label)}</b><small>${god?`Осколки яйца: <span class="dungeon-frag">${dungeonFragment(id)}/4</span>`:`Награда: яйцо ${esc(sp.name)}`} · 5 этапов</small>${active?`<button class="b go" data-dnext>Продолжить: ${run.stage}/5</button>`:`<button class="b hot" data-dpath="${i}" data-level="${level.id}">Войти</button>`}</div></article>`}).join("")}</div>`;
+  const teamNames = strongest.length ? strongest.map(m => `${esc(m.name)} · ${fmt(powerOf(m))}`).join("<br>") : "нет свободных чудищ";
+  const upgrade = next ? `<div class="dungeon-run"><b>Следующее улучшение: ${next.id} ур. «${esc(next.name)}»</b><br><small>Нужно: ${fmt(DUNGEON_UPGRADE_COST[next.id])} золота · ${next.need} ур. хозяина · сила отряда ${fmt(next.power)}</small><br><button class="b gold" data-dupg>Улучшить Подземелье · ${fmt(DUNGEON_UPGRADE_COST[next.id])} ${gold}</button></div>` : `<div class="dungeon-run">Подземелье достигло максимального, 5 уровня.</div>`;
+  dungeonRoot.querySelector(".dungeon-content").innerHTML = `<section class="dungeon-hero"><img class="dungeon-art" src="${ASSET_SRC[level.art]}" alt="${esc(level.name)}"><div class="dungeon-copy">${rarityBadge(level.rar,"lg")}<h3>${esc(level.name)}</h3><p>Уровень Подземелья: <b>${rank}/5</b>. Пять боевых этапов. Рекомендуемая сила отряда: <b>${fmt(level.power)}</b>.</p><div class="dungeon-run"><b>Сила свободного отряда: ${fmt(power)} / ${fmt(level.power)}</b><br><small>Считается сумма трёх сильнейших свободных чудищ. Чудища в саду и экспедициях не учитываются.</small><br><small>${teamNames}</small></div>${running?`<div class="dungeon-run">Текущий маршрут: этап ${run.stage}/5</div>`:""}${upgrade}${paths}</div></section>`;
 }
 function openDungeon(){if(!dungeonRoot)buildDungeonDom();renderDungeon();dungeonRoot.classList.add("on");$("#dock").style.display="none";bus.emit("sheet:close");bus.emit("build:end")}
 function closeDungeon(){if(!dungeonRoot)return;dungeonRoot.classList.remove("on");if(!S.battle)$("#dock").style.display=""}
@@ -13375,7 +13442,8 @@ function restore() {
   S.nid = d.nid ?? 1;
   S.team = d.team || [];
   S.adv = d.adv || {};
-  S.dungeon = Object.assign({ fragments: {}, run: null }, d.dungeon || {});
+  S.dungeon = Object.assign({ fragments: {}, run: null, lvl: 1 }, d.dungeon || {});
+  S.dungeon.lvl = clamp(+S.dungeon.lvl || 1, 1, 5);
   S.dex = d.dex || [];
   S.profile = Object.assign({ level: 1, xp: 0 }, d.profile || {});
   S.daily = d.daily || null;  // задания дня; если пусто или устарело — game/quests.js откроет новые сам
@@ -13384,6 +13452,7 @@ function restore() {
   S.homes = Object.assign({ [FIRST_HOME]: true }, d.homes || {});
   S.homeLevels = Object.assign({ [FIRST_HOME]: 1 }, d.homeLevels || {});
   S.homeLevels[FIRST_HOME] = clamp(+S.homeLevels[FIRST_HOME] || 1, 1, 3);
+  S.homeLayout = +d.homeLayout || 0;
   S.isle = homeBought(d.isle) ? d.isle : FIRST_HOME;
   S.builds = d.builds.map(b => {
     const fixed = Object.assign({ slots: [], eggs: [], breed: null, breedHistory: [], job: null, lvl: 1, isle: FIRST_HOME }, b);
@@ -13631,7 +13700,7 @@ async function boot() {
   catch (e) { console.warn("картинки Мастерской не подхватились:", e) }
 
   if (!restore()) newGame();
-  syncHomeUpgrade();
+  syncHomeUpgrade(FIRST_HOME, S.homeLayout !== HOME_LAYOUT_VERSION);
   relocateStrays();     // плиту могли подвинуть — возвращаем её добро на место
   seedPlots();          // на новых плитах должны стоять деревья, даже у старых сохранений
   // старые сохранения Чуддекса не знали: открываем страницы по тем, кто уже
