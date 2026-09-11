@@ -566,6 +566,9 @@ input[type=range]{width:100%; accent-color:var(--leaf-2)}
   animation:hintIn .25s ease-out;
 }
 #hint[hidden]{display:none}
+#hintIcon{flex:none;display:grid;place-items:center;width:28px;height:28px;border-radius:10px;background:linear-gradient(180deg,#A8E96A,#6FBF3B);border:2px solid var(--line);font-size:15px}
+.hint-copy{display:grid;gap:1px;min-width:0}
+#hintKicker{font-size:8px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#5d7653}
 #hint b{font-size:13px; font-weight:800; line-height:1.25; color:var(--ink)}
 .hint-go{
   flex:none; cursor:pointer; font:inherit; font-size:12px; font-weight:900;
@@ -588,7 +591,7 @@ input[type=range]{width:100%; accent-color:var(--leaf-2)}
 }
 
 @media (max-width:560px){
-  #hint{bottom:64px; padding:6px 7px 6px 11px; gap:7px}
+  #hint{bottom:64px; padding:6px 7px 6px 9px; gap:7px}#hintIcon{width:25px;height:25px;border-radius:8px;font-size:13px}
   #hint b{font-size:11.5px}
   .hint-go{font-size:11px; padding:5px 10px}
   .dex-ic{width:26px; height:26px; font-size:15px}
@@ -1468,6 +1471,20 @@ button.mm-skill:disabled{cursor:default}
   font-style:normal; font-size:13px;
 }
 .brow-n:empty{background:rgba(255,255,255,.12)}
+.brow.busy{cursor:not-allowed;opacity:.66;filter:saturate(.55)}
+.brow.busy .brow-n{background:#584447;color:#ffd7cf}
+
+/* Выбор отряда: роли, свободные слоты и один ясный совет до начала боя. */
+.bteam-summary{display:grid;gap:9px;margin:0 0 12px}
+.bteam-slots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.bslot{min-height:56px;padding:7px;border:1px solid #5e837b;border-radius:11px;background:#112f3d;display:flex;align-items:center;gap:6px;text-align:left}
+.bslot.empty{border-style:dashed;color:#9ab4b7;justify-content:center}
+.bslot-face{width:34px;height:34px;flex:none;border-radius:8px;background:#214c59 center/contain no-repeat}
+.bslot b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;color:#edf0d9}
+.bslot small{display:block;font-size:9px;color:#b6cfca;margin-top:2px}
+.bteam-advice{padding:9px 11px;border:1px solid #7ba188;border-radius:11px;background:#183e48;color:#dcebdc;font-size:11px;line-height:1.38;text-align:left}
+.bteam-advice b{color:#efdbac}.bteam-advice.warn{border-color:#c9a86c;background:#4a402b;color:#fff0c4}
+.brow-role{margin-top:4px}
 
 .bstars{display:flex; justify-content:center; gap:10px; margin:6px 0 10px}
 .bstar{font-style:normal; font-size:34px; color:#2b4a60; text-shadow:0 2px 0 #06202f}
@@ -2085,6 +2102,21 @@ button.mm-skill:disabled{cursor:default}
   padding:12px 14px; border-radius:14px; background:var(--well); box-shadow:var(--sunk);
   font-size:12.5px; font-weight:700; color:var(--ink-2); line-height:1.5;
 }
+.qt-hero{
+  position:relative; overflow:hidden; padding:14px 16px; border:2px solid var(--line); border-radius:18px;
+  background:linear-gradient(135deg,#1d5e6b,#103d50); color:#f7fbec; box-shadow:var(--lift-sm);
+}
+.qt-hero:after{content:""; position:absolute; width:110px; height:110px; right:-30px; top:-42px; border-radius:50%;
+  background:radial-gradient(circle,rgba(255,222,118,.45),rgba(255,222,118,0) 68%)}
+.qt-kicker{position:relative; z-index:1; display:block; margin-bottom:3px; font-size:10px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; color:#bcebf0}
+.qt-hero strong{position:relative; z-index:1; display:block; font-family:var(--disp); font-size:16px; line-height:1.25}
+.qt-hero p{position:relative; z-index:1; margin:5px 0 0; font-size:12px; font-weight:700; color:#d9f0ec; line-height:1.35}
+.qt-bonus{
+  display:flex; align-items:center; gap:8px; padding:10px 12px; border:2px solid var(--gold-2); border-radius:14px;
+  background:linear-gradient(135deg,#fff7d6,#ffe49b); color:#613b13; font-size:11px; font-weight:800; line-height:1.35;
+}
+.qt-bonus-icon{font-size:22px; line-height:1}
+.qt-bonus b{display:block; font-family:var(--disp); font-size:12px}
 
 .qt-list{display:grid; gap:8px}
 .qt-row{
@@ -2101,6 +2133,8 @@ button.mm-skill:disabled{cursor:default}
 .qt-info{flex:1; min-width:0; display:grid; gap:4px}
 .qt-info b{font-family:var(--disp); font-size:13px; font-weight:800}
 .qt-info small{font-size:11px; font-weight:700; color:var(--ink-2)}
+.qt-reward{display:inline-flex; width:max-content; align-items:center; gap:4px; padding:2px 6px; border-radius:999px;
+  background:rgba(232,176,74,.17); color:#7a4b10; font-size:10px; font-weight:900}
 .qt-bar{position:relative; height:7px; border-radius:999px; background:var(--well);
   box-shadow:var(--sunk); overflow:hidden}
 .qt-bar i{display:block; height:100%; background:linear-gradient(90deg,#FFD873,#F0A93A)}
@@ -2114,6 +2148,9 @@ button.mm-skill:disabled{cursor:default}
   .qt-head h2{font-size:17px}
   .qt-row{padding:8px; gap:8px}
   .qt-ic{width:32px; height:32px; font-size:16px}
+  .qt-hero{padding:12px}
+  .qt-hero strong{font-size:14px}
+  .qt-bonus{padding:8px 10px}
 }
 
 </style>
@@ -2559,7 +2596,7 @@ html,body,#app{touch-action:pan-x pan-y}
   </div>
 
   <!-- подсказка «что делать дальше»: её текст ставит src/ui/hints.js -->
-  <div id="hint" hidden><b id="hintText"></b><button class="hint-go" id="hintGo"></button>
+  <div id="hint" hidden><i id="hintIcon" aria-hidden="true">✨</i><span class="hint-copy"><em id="hintKicker">Следующий шаг</em><b id="hintText"></b></span><button class="hint-go" id="hintGo"></button>
     <button class="hint-x" id="hintX" title="Скрыть подсказку">×</button></div>
 
   <div id="dock">
@@ -5554,6 +5591,32 @@ function drawBubble(c, x, y, kind, t) {
   return { x, y: y + bob - 6, r: 21 };
 }
 
+/* Короткая метка состояния над постройкой. Она отвечает на вопрос новичка
+   «что здесь делать прямо сейчас?» и показывается только у объектов с действием. */
+function drawStateTag(c, x, y, state, t) {
+  if (!state) return;
+  const bob = Math.sin(t * 2.4 + x * .01) * 1.5;
+  c.save(); c.translate(x, y + bob);
+  c.font = "800 10px system-ui, sans-serif";
+  const w = Math.max(50, c.measureText(state.label).width + 31), h = 20;
+  c.fillStyle = state.tone || "#234b5a";
+  c.strokeStyle = OUTLINE; c.lineWidth = 2;
+  c.beginPath(); c.roundRect(-w / 2, -h / 2, w, h, 9); c.fill(); c.stroke();
+  c.fillStyle = "#fff7dd"; c.textAlign = "center"; c.textBaseline = "middle";
+  c.fillText(state.icon, -w / 2 + 12, 1);
+  c.font = "800 9px system-ui, sans-serif"; c.fillText(state.label, 8, 1);
+  c.restore();
+}
+function buildingState(b) {
+  if (b.job) return null;
+  const now = Date.now();
+  if (b.type === "farm") { const slot = (b.slots || [])[0]; if (!slot || slot.crop == null) return { icon: "🌱", label: "ПОСАДИТЬ", tone: "#397445" }; if (slot.readyAt > now) return { icon: "⏳", label: tleft(slot.readyAt - now), tone: "#2b6475" }; }
+  if (b.type === "tower") { const egg = (b.eggs || []).find(Boolean); if (!egg) return { icon: "🥚", label: "ЯЙЦО", tone: "#735a95" }; if (egg.readyAt > now) return { icon: "⏳", label: tleft(egg.readyAt - now), tone: "#735a95" }; }
+  if (b.type === "breeding") { if (!b.breed) return { icon: "💞", label: "ВЫБРАТЬ ПАРУ", tone: "#9c4e75" }; if (b.breed.readyAt > now) return { icon: "⏳", label: tleft(b.breed.readyAt - now), tone: "#9c4e75" }; }
+  if (b.type === "habitat" && !residentsOf(b).length) return { icon: "🏠", label: "ЗАСЕЛИТЬ", tone: "#82673c" };
+  if (b.type === "cave" && b.exp) { if (b.exp.readyAt <= now) return { icon: "🎁", label: "ЗАБРАТЬ", tone: "#397445" }; return { icon: "🧭", label: tleft(b.exp.readyAt - now), tone: "#315a78" }; }
+  return null;
+}
 
 /* ===== src/game/obstacles-art.js ===== */
 /* Деревья и прочие препятствия: спрайт ставится «пятками» на свои клетки.
@@ -6247,6 +6310,8 @@ function drawWorld() {
     if (b.workerEntry) { drawWorkerAt(ctx, b.workerEntry); continue }
     drawBuilding(ctx, b, clock.now);
     if (!isReady(b)) continue;                      // недостроенное ничего не даёт
+    const state = buildingState(b);
+    if (state) { const spot = bubbleSpot(b, 74); drawStateTag(ctx, spot.x, spot.y - 14, state, clock.now); }
 
     if (b.type === "habitat") {
       const s = BUILDINGS.habitat.size;
@@ -6754,23 +6819,23 @@ const PUBLIC_BUILD = true;
    ──────────────────────────────────────────────────────────────────────── */
 const QUEST_POOL = [
   { id: "login", kind: "login", glyph: "☀", weight: 0.6,
-    name: "Загляни на остров", desc: "Просто открой игру — уже готово", goal: 1 },
+    name: "Остров ждёт тебя", desc: "Начни день с маленькой награды", goal: 1 },
   { id: "feed", kind: "feed", glyph: "🍊", weight: 1,
-    name: "Покорми чудищ", desc: "Покорми чудищ 5 раз", goal: 5 },
+    name: "Силы для команды", desc: "Покорми чудищ 5 раз — они станут сильнее", goal: 5 },
   { id: "gold", kind: "gold", glyph: "💰", weight: 0.9,
-    name: "Собери золото", desc: "Забери золото из логова 3 раза", goal: 3 },
+    name: "Доход логовов", desc: "Собери золото 3 раза — оно нужно для новых зданий", goal: 3 },
   { id: "harvest", kind: "harvest", glyph: "🌱", weight: 0.9,
-    name: "Собери урожай", desc: "Собери апельсины с фермы 3 раза", goal: 3 },
+    name: "Урожай для роста", desc: "Собери апельсины 3 раза — это еда для чудищ", goal: 3 },
   { id: "hatch", kind: "hatch", glyph: "🥚", weight: 1.2,
-    name: "Вылупи чудище", desc: "Вылупи чудище в башне высиживания", goal: 1 },
+    name: "Новое знакомство", desc: "Вылупи чудище — оно усилит твою коллекцию", goal: 1 },
   { id: "breed", kind: "breed", glyph: "💞", weight: 1.4,
-    name: "Своди пару", desc: "Забери яйцо из сада разведения", goal: 1 },
+    name: "Новая линия", desc: "Забери яйцо из сада — так открываются гибриды", goal: 1 },
   { id: "expedition", kind: "expedition", glyph: "🧭", weight: 1.4,
-    name: "Собери экспедицию", desc: "Заверши вылазку в пещере", goal: 1 },
+    name: "Вылазка за добычей", desc: "Заверши экспедицию и верни команду с наградой", goal: 1 },
   { id: "battle", kind: "battle", glyph: "⚔", weight: 1.6,
-    name: "Победи в странствиях", desc: "Победи в бою 3 раза", goal: 3 },
+    name: "Защити остров", desc: "Победи в 3 боях и открой путь дальше", goal: 3 },
   { id: "buy", kind: "buy", glyph: "🛒", weight: 1.2,
-    name: "Пополни остров", desc: "Купи яйцо в лавке", goal: 1 }
+    name: "Выбери новое яйцо", desc: "Купи яйцо в лавке и пополни коллекцию", goal: 1 }
 ];
 
 /**
@@ -10244,7 +10309,7 @@ function farmSheet(node, b) {
         : ready ? esc(cr.name) + " созрел — загляни и собери урожай."
         : esc(cr.name) + " зреет — загляни, когда будет готово."}</div>
       <div class="rowb">
-        <button class="b go big" data-act="tend">${!cr ? "Посадить" : "Открыть грядку"}</button>
+        <button class="b ${!cr ? "go" : ready ? "gold" : ""} big" data-act="tend">${!cr ? "🌱 Посадить" : ready ? "🍊 Собрать урожай" : "⏳ Посмотреть рост"}</button>
         ${up ? upgradeBtn(up.cost) : ""}
         ${moveBtn()}
         ${sellBtn()}
@@ -10326,7 +10391,7 @@ function towerSheet(node, b) {
         <div class="n">Место ${i + 1}</div>
         <div class="d">свободно</div>
         <div class="sp">
-          ${species.length ? `<button class="b sm go" data-lay="${i}">Заложить яйцо</button>` : ""}
+          ${species.length ? `<button class="b sm go" data-lay="${i}">🥚 Заложить яйцо</button>` : ""}
         </div></div>`);
       continue;
     }
@@ -11157,6 +11222,7 @@ function plate(m, side, i, aims) {
   const now = act && act.m === m && B.phase === "fight";
   const aimed = B.target === m && B.phase === "fight";
   const els = elementsOf(m).map(e => elIcon(e)).join("");
+  const role = specializationOf(m);
 
   /* Приём уже выбран: над теми, к кому его можно применить, стоит стрелка,
      остальные гаснут. Цвет стрелки — по стихии: зелёная, если этой цели
@@ -11174,7 +11240,7 @@ function plate(m, side, i, aims) {
       data-side="${side}" data-i="${i}">
     ${pick ? `<i class="bp-aim ${sign}">▼</i>` : ""}
     <div class="bp-name">${esc(m.name)}</div>
-    <div class="bp-tags">${rarityBadge(m)}<b>${m.level}</b>${els}</div>
+    <div class="bp-tags">${rarityBadge(m)}<b>${m.level}</b>${els}<span class="bp-role" title="${role.name}: ${role.desc}">${role.icon}</span></div>
     <div class="bp-hp"><i style="width:${hp}%"></i>
       <b>${Math.max(0, Math.ceil(m.hp))}</b></div>
     ${dead ? "" : `<div class="bp-sta"><i style="width:${staminaOf(m) / staminaMax() * 100}%"></i>
@@ -11207,11 +11273,14 @@ function renderBattlePlates() {
 function renderBattleBar() {
   const B = S.battle, bar = $("#bBar");
   if (B.phase === "prep") {
+    const team = B.team.filter(monsterAvailable).slice(0, TEAM_SIZE);
+    const advice = teamBattleAdvice(team, B.foes);
     bar.innerHTML = `<div class="bprep">
         <div class="bprep-t">${esc(B.title)}</div>
+        <div class="bteam-advice ${advice.warn ? "warn" : ""}"><b>Отряд ${team.length}/${TEAM_SIZE}:</b> ${advice.text}</div>
         <div class="bprep-row">
-          <button class="b" id="bChange">Сменить команду</button>
-          <button class="b hot big" id="bGo">В бой!</button>
+          <button class="b" id="bChange">👥 Изменить отряд</button>
+          <button class="b hot big" id="bGo">⚔ Начать бой</button>
         </div>
       </div>`;
     $("#bChange").onclick = openTeamPicker;
@@ -11349,36 +11418,63 @@ function openTeamPicker() {
   renderBattleTeamPicker();
 }
 
+function teamBattleAdvice(team, foes = []) {
+  const roles = new Set(team.map(m => specializationOf(m).id));
+  if (!team.length) return { warn: true, text: "Выбери хотя бы одного свободного бойца, чтобы начать." };
+  if (team.length < TEAM_SIZE) return { warn: false, text: `Свободно ещё ${TEAM_SIZE - team.length} ${TEAM_SIZE - team.length === 1 ? "место" : "места"}. Больше бойцов — больше вариантов в бою.` };
+  if (!roles.has("tank") && !roles.has("shielder")) return { warn: true, text: "Передняя линия без защиты. Добавь Танка или Щитовика, если враг сильно бьёт." };
+  if (!roles.has("healer") && !roles.has("shielder")) return { warn: true, text: "В отряде нет поддержки. Хилер или Щитовик помогут пережить долгий бой." };
+  if (roles.size === 1) return { warn: true, text: "Все бойцы одной роли. Смешай роли, чтобы отряд был гибче." };
+  const dangerous = foes.some(m => specializationOf(m).id === "damage");
+  return { warn: false, text: dangerous ? "Враги наносят много урона — защита в составе пригодится." : "Состав сбалансирован. Можно начинать бой." };
+}
+
+function teamSlots(team) {
+  const full = team.map(m => {
+    const role = specializationOf(m);
+    return `<div class="bslot"><span class="bslot-face" style="background-image:url(&quot;${monsterPortrait(m)}&quot;)"></span><span><b>${esc(m.name)}</b><small>${role.icon} ${role.name}</small></span></div>`;
+  });
+  while (full.length < TEAM_SIZE) full.push(`<div class="bslot empty">+ свободный слот</div>`);
+  return full.join("");
+}
+
+function teamBattleSummary(team, foes = []) {
+  const advice = teamBattleAdvice(team, foes);
+  return `<div class="bteam-summary"><div class="bteam-slots">${teamSlots(team)}</div><div class="bteam-advice ${advice.warn ? "warn" : ""}"><b>Совет:</b> ${advice.text}</div></div>`;
+}
+
 function renderBattleTeamPicker() {
   const box = $("#bTeam");
   if (!picking) { box.hidden = true; return }
-  // список перерисовывается на каждый выбор — без этого прокрутка каждый раз
-  // прыгала в начало, и второй тап на длинном списке попадал уже не туда
+  // Сохраняем прокрутку списка: при выборе второго/третьего бойца экран не прыгает.
   const scrolled = box.querySelector(".bteam-card");
   const scrollTop = scrolled ? scrolled.scrollTop : 0;
   syncTeam();
   const chosen = [...S.team];
+  const team = teamMonsters().filter(monsterAvailable).slice(0, TEAM_SIZE);
   const rows = S.mons.map(m => {
     const st = statsAt(m);
     const n = chosen.indexOf(m.id);
     const busy = monsterBusyInfo(m);
-    return `<div class="brow ${n >= 0 ? "on" : ""} ${busy ? "busy" : ""}" ${busy ? "" : `data-mon="${m.id}"`}>
+    const role = specializationOf(m);
+    return `<div class="brow ${n >= 0 ? "on" : ""} ${busy ? "busy" : ""}" ${busy ? "aria-disabled=\"true\"" : `data-mon="${m.id}"`}>
       <span class="brow-face" style="background-image:url(&quot;${monsterPortrait(m)}&quot;)"></span>
       <div class="brow-info">
         <b>${rarityBadge(m)} ${esc(m.name)}</b>
-        <small>${busy ? "Занят: " + esc(busy.text) : "ур. " + m.level + " · этап " + monsterStage(m) + " · сила " + fmt(powerOf(m))}</small>
-        <small>${st.hp} хп · ${st.atk} атака · ${st.def} защита · ${st.spd} скорость</small>
+        <small>${busy ? "⛔ Занят: " + esc(busy.text) : "ур. " + m.level + " · этап " + monsterStage(m) + " · сила " + fmt(powerOf(m))}</small>
+        ${busy ? `<small>Недоступен, пока не освободится.</small>` : `<span class="brow-role">${specializationChip(m, true)}</span>`}
       </div>
-      <em class="brow-n">${n >= 0 ? n + 1 : ""}</em>
+      <em class="brow-n">${n >= 0 ? n + 1 : busy ? "⛔" : ""}</em>
     </div>`;
   }).join("");
 
   box.hidden = false;
   box.innerHTML = `<div class="bteam-card">
-      <h3>Отряд · до ${TEAM_SIZE} чудищ</h3>
-      <p class="d">Порядок нажатий — порядок расстановки: первый встаёт впереди.</p>
+      <h3>Собери отряд</h3>
+      <p class="d">Выбери до ${TEAM_SIZE} свободных чудищ. Первый выбранный встанет впереди.</p>
+      ${teamBattleSummary(team, S.battle ? S.battle.foes : [])}
       <div class="brows">${rows || `<div class="empty">Чудищ пока нет — выведи первого в башне.</div>`}</div>
-      <div class="rowb"><button class="b go" id="bTeamOk">Готово</button></div>
+      <div class="rowb"><button class="b go big" id="bTeamOk">Готово — ${chosen.length}/${TEAM_SIZE}</button></div>
     </div>`;
   box.querySelector(".bteam-card").scrollTop = scrollTop;
 
@@ -11391,7 +11487,6 @@ function renderBattleTeamPicker() {
       else S.team.push(id);
       persist();
       renderBattleTeamPicker();
-      // отряд в бою обновляем сразу, чтобы на арене было видно, кого берём
       if (S.battle && S.battle.phase === "prep") {
         S.battle.team = teamMonsters().slice(0, TEAM_SIZE);
         for (const m of S.battle.team) { m.mode = "idle"; m._fell = false }
@@ -12613,16 +12708,19 @@ function renderQuestWindow() {
   const allClaimed = list.every(q => q.claimed);
   const bonus = bonusReward(profileLevel());
 
+  const next = list.find(q => !q.claimed && q.have < q.need) || list.find(q => !q.claimed);
   const rows = list.map(q => {
     const t = q.t;
+    const reward = questReward(t, profileLevel());
     const pct = Math.min(100, q.have / q.need * 100);
     const ready = q.have >= q.need && !q.claimed;
     return `<div class="qt-row ${q.claimed ? "done" : ready ? "ready" : ""}">
       <span class="qt-ic">${t.glyph}</span>
       <div class="qt-info">
         <b>${esc(t.name)}</b>
-        <div class="qt-bar"><i style="width:${pct}%"></i></div>
-        <small>${esc(t.desc)} · ${q.have} / ${q.need}</small>
+        <small>${esc(t.desc)}</small>
+        <div class="qt-bar" aria-label="Прогресс ${q.have} из ${q.need}"><i style="width:${pct}%"></i></div>
+        <span class="qt-reward">Награда: +${fmt(reward.gold)} 🪙 · +${fmt(reward.food)} 🍊 · ${q.have}/${q.need}</span>
       </div>
       ${q.claimed
         ? `<span class="qt-state">получено</span>`
@@ -12630,12 +12728,14 @@ function renderQuestWindow() {
     </div>`;
   }).join("");
 
-  $("#qtBody").innerHTML = `
-    <div class="qt-hint">${allClaimed
-      ? "Задания на сегодня закрыты — новые придут завтра."
-      : `Собери все три и получишь ещё: +${fmt(bonus.gold)} золота, +${fmt(bonus.food)}
-         апельсинов, ${bonus.crystals} кристалл.`}</div>
-    <div class="qt-list">${rows}</div>`;
+  const hero = allClaimed
+    ? `<div class="qt-hero"><span class="qt-kicker">День завершён</span><strong>Ты сделал остров сильнее</strong><p>Новые небольшие цели появятся завтра. Возвращайся за свежими наградами.</p></div>`
+    : `<div class="qt-hero"><span class="qt-kicker">Следующий шаг</span><strong>${next ? esc(next.t.name) : "Забери награду"}</strong><p>${next ? esc(next.t.desc) : "Осталось забрать готовую награду."}</p></div>`;
+  const bonusCard = allClaimed
+    ? `<div class="qt-hint">Все награды уже у тебя. Завтра откроется новый набор.</div>`
+    : `<div class="qt-bonus"><span class="qt-bonus-icon">🎁</span><span><b>Бонус за все 3 задания</b>+${fmt(bonus.gold)} 🪙 · +${fmt(bonus.food)} 🍊 · ${bonus.crystals} 💎</span></div>`;
+
+  $("#qtBody").innerHTML = `${hero}${bonusCard}<div class="qt-list">${rows}</div>`;
 
   $$("#quests [data-claim]").forEach(btn => btn.onclick = () => {
     const r = claimQuest(btn.dataset.claim);
@@ -12644,9 +12744,9 @@ function renderQuestWindow() {
       r.reward.gold ? "+" + fmt(r.reward.gold) + " золота" : "",
       r.reward.food ? "+" + fmt(r.reward.food) + " апельсинов" : ""
     ].filter(Boolean).join(", ");
-    toast(bits, "good");
+    toast("Готово! " + bits + " — остров стал чуть сильнее.", "good");
     if (r.bonus) setTimeout(() => toast(
-      "Все задания дня выполнены! +" + fmt(r.bonus.gold) + " золота, +" + fmt(r.bonus.food)
+      "День острова завершён! +" + fmt(r.bonus.gold) + " золота, +" + fmt(r.bonus.food)
         + " апельсинов, " + r.bonus.crystals + " кристалл", "good"), 600);
     renderQuestWindow();
     renderQuestBadge();
@@ -12799,6 +12899,9 @@ function renderHint() {
   if (!h) { box.hidden = true; return }
   box.hidden = false;
   $("#hintText").textContent = h.text;
+  const icon = { shop: "🏗️", tower: "🥚", farm: "🌱", mon: "🍊", adv: "⚔️", breed: "💞" }[h.act] || "✨";
+  $("#hintIcon").textContent = icon;
+  $("#hintKicker").textContent = h.act === "adv" ? "Следующее приключение" : "Главная цель сейчас";
   const go = $("#hintGo");
   go.hidden = !h.go;
   go.textContent = h.go || "";
