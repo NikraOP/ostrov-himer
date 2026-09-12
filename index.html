@@ -3659,6 +3659,14 @@ function syncHomeUpgrade(id = FIRST_HOME, moveContents = false) {
   }
   if (moveContents && S) S.homeLayout = HOME_LAYOUT_VERSION;
 }
+/* Единая точка подготовки мира после чтения сохранения. Сначала уровень
+   определяет размер острова и координаты соседей, затем эта же сетка идёт
+   в проверку построек и в отрисовку. */
+function applySavedHomeLayout() {
+  syncHomeUpgrade(FIRST_HOME, false);
+  setPlots(HOME_LIST());
+}
+
 function upgradeHome() {
   const lvl = homeLevel(FIRST_HOME), next = HOME_UPGRADES[lvl + 1];
   if (!next) return toast("Базовый остров уже достиг 3 уровня", "good");
@@ -13610,20 +13618,21 @@ function restore() {
   S.homes = Object.assign({ [FIRST_HOME]: true }, d.homes || {});
   S.homeLevels = Object.assign({ [FIRST_HOME]: 1 }, d.homeLevels || {});
   S.homeLevels[FIRST_HOME] = clamp(+S.homeLevels[FIRST_HOME] || 1, 1, 3);
-  // Восстанавливаем размер основной плиты ДО нормализации координат зданий.
-  // Иначе постройки на расширенной части острова сжимались границами 1 уровня.
-  syncHomeUpgrade(FIRST_HOME, false);
+  // Сетка уровня должна быть готова до проверки сохранённых координат.
+  applySavedHomeLayout();
   S.homeLayout = +d.homeLayout || 0;
   S.isle = homeBought(d.isle) ? d.isle : FIRST_HOME;
   S.builds = d.builds.map(b => {
     const fixed = Object.assign({ slots: [], eggs: [], breed: null, breedHistory: [], job: null, lvl: 1, isle: FIRST_HOME }, b);
     // стихия могла исчезнуть из игры — переводим на первую доступную
     if (fixed.type === "habitat" && !ELEMENTS[fixed.el]) fixed.el = EL_KEYS[0];
-    // размер здания мог измениться после обновления игры — вернём его в сетку
+    // Не подрезаем валидные сохранённые координаты прямоугольником старого
+    // уровня. После загрузки relocateStrays() проверит их по настоящей форме
+    // уже применённой сетки и переместит только реально висящие в небе объекты.
     const size = BUILDINGS[fixed.type].size;
     const p = HOMES[fixed.isle] || HOMES[FIRST_HOME];
-    fixed.i = clamp(fixed.i, Math.ceil(p.cx - p.R), Math.floor(p.cx + p.R) - size);
-    fixed.j = clamp(fixed.j, Math.ceil(p.cy - p.R), Math.floor(p.cy + p.R) - size);
+    if (!Number.isFinite(fixed.i)) fixed.i = Math.round(p.cx - size / 2);
+    if (!Number.isFinite(fixed.j)) fixed.j = Math.round(p.cy - size / 2);
     syncSlots(fixed);
     return fixed;
   });
@@ -13861,9 +13870,9 @@ async function boot() {
   catch (e) { console.warn("картинки Мастерской не подхватились:", e) }
 
   if (!restore()) newGame();
-  // Центры островов пересчитываем на каждом старте, но здания сдвигаются только
-  // в момент реального улучшения. Иначе после перезапуска они уезжали повторно.
-  syncHomeUpgrade(FIRST_HOME, false);
+  // Перед первым кадром синхронизируем уровень, сетку и координаты островов.
+  // Это защищает импорт сохранения и обычную перезагрузку страницы.
+  applySavedHomeLayout();
   if (S.homeLayout !== HOME_LAYOUT_VERSION) {
     S.homeLayout = HOME_LAYOUT_VERSION;
     persist();
