@@ -301,6 +301,9 @@ button{font-family:var(--ui); font-weight:800; color:var(--ink); cursor:pointer}
 #sheet .rowb .b:active{box-shadow:none}
 
 .upgrade-layout{display:grid;grid-template-columns:minmax(210px,1fr) 1fr;gap:18px;padding:2px}.upgrade-preview{min-height:235px;position:relative;display:grid;place-items:center;border:3px solid #79d8ef;border-radius:14px;background:radial-gradient(circle,#efffff,#b7e9f4 54%,#4d9fbc);overflow:hidden}.upgrade-preview:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(30deg,rgba(0,111,148,.08) 0 2px,transparent 2px 19px)}.upgrade-preview span{position:absolute;top:9px;left:10px;z-index:1;border-radius:6px;padding:4px 7px;background:#08324e;color:#fff;font-size:10px;font-weight:900}.upgrade-preview img{position:relative;z-index:1;max-width:88%;max-height:205px;object-fit:contain;filter:drop-shadow(0 8px 5px rgba(0,25,42,.3))}.upgrade-result{padding:14px;border:2px solid #2f91b0;border-radius:14px;background:linear-gradient(180deg,#0d3d5b,#082a45);color:#e9fbff}.upgrade-kicker{font-size:10px;font-weight:900;letter-spacing:.12em;color:#8defff}.upgrade-levels{display:flex;gap:12px;align-items:center;margin:12px 0;font-size:28px}.upgrade-levels b{display:grid;place-items:center;width:47px;height:47px;border-radius:50%;background:#10badc;color:#04243a}.upgrade-levels i{font-style:normal;color:#ffdb63}.upgrade-stat{padding:10px;border-radius:10px;background:#062238;border:1px solid #388da7}.upgrade-stat small{display:block;color:#9ceeff;font-size:10px;font-weight:900;text-transform:uppercase}.upgrade-stat strong{display:block;margin-top:3px;font-size:22px}.upgrade-stat em{font-style:normal;color:#ffdc62}.upgrade-result p{color:#c2e8f1;font-size:12px;line-height:1.45}.upgrade-foot{justify-content:center}
+.monster-power{display:flex;align-items:center;gap:9px;margin:9px 0 8px;padding:8px 10px;border:2px solid #e5bb50;border-radius:11px;background:linear-gradient(135deg,#16465d,#0b3049);color:#fff5ca;box-shadow:inset 0 1px rgba(255,255,255,.18)}
+.monster-power i{display:grid;place-items:center;width:29px;height:29px;border-radius:9px;background:linear-gradient(145deg,#ffe987,#de9d20);color:#563000;font-style:normal;font-size:17px;box-shadow:0 2px 0 #7b4b08}
+.monster-power span{font-size:10px;font-weight:900;letter-spacing:.1em}.monster-power small{margin-left:auto;color:#b9dce5;font-size:10px;font-weight:800;text-align:right;line-height:1.2}.monster-power b{font-family:var(--disp);font-size:18px;color:#fff8d2;line-height:1}
 @media(max-width:560px){.monster-profile,.upgrade-layout{grid-template-columns:1fr}.monster-hero{min-height:175px}.items{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.item{min-height:178px}.item canvas,.item .mon-art{width:104px;height:78px}}
 
 /* грядки, места под яйца, родители */
@@ -10901,6 +10904,9 @@ function monsterSheet(node, m) {
             <b>${Math.round(m.hp)} / ${st.hp} хп</b></div>
           <div class="meter g"><i style="width:${clamp(m.xp / need * 100, 0, 100)}%"></i>
             <b>${m.xp} / ${need} опыта</b></div>
+          <div class="monster-power" title="Сила — общий рейтинг монстра: учитывает здоровье, атаку, защиту и скорость.">
+            <i>✦</i><span>СИЛА</span><b>${fmt(powerOf(m))}</b><small>общий рейтинг
+            бойца</small></div>
           <div class="stat4">
             <div><b>${st.hp}</b><span>ХП</span></div><div><b>${st.atk}</b><span>Атака</span></div>
             <div><b>${st.def}</b><span>Защита</span></div><div><b>${st.spd}</b><span>Скор.</span></div></div>
