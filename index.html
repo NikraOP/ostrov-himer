@@ -909,6 +909,9 @@ button.mm-skill:disabled{cursor:default}
 .mc-stats b{display:block; font-family:var(--disp, "Unbounded", sans-serif);
   font-size:15px; font-weight:800; color:var(--ink); font-variant-numeric:tabular-nums}
 .mc-stats span{font-size:8.5px; font-weight:900; letter-spacing:.06em; color:var(--ink-2)}
+.mc-power{display:flex;align-items:center;gap:8px;min-height:38px;padding:7px 10px;border-radius:11px;border:1px solid #e0ba62;background:linear-gradient(135deg,#fff5cf,#f0c25d);color:#51370b;box-shadow:var(--lift-sm)}
+.mc-power span{font-size:10px;font-weight:900;letter-spacing:.1em}.mc-power b{font-family:var(--disp,"Unbounded",sans-serif);font-size:18px;margin-left:auto;font-variant-numeric:tabular-nums}.mc-power small{font-size:9px;font-weight:900;opacity:.75}
+
 
 .mc-sk-head{
   display:flex; align-items:center; gap:8px; margin-top:2px;
@@ -2359,6 +2362,8 @@ button,input,select{font:inherit}button{touch-action:manipulation}button:focus-v
 .mc-stats div{background:#0e303e; box-shadow:inset 0 1px #ffffff12}
 .mc-stats b{color:#f0e6ca}
 .mc-stats span{color:#a4bfc1}
+.mc-power{border-color:#d7b76d;background:linear-gradient(135deg,#4d472b,#2f3b35);color:#f4dda0;box-shadow:inset 0 1px #ffffff12}.mc-power small{color:#bdcfbf;opacity:1}
+
 
 .mc-sk-head{color:#a9c4c6}
 .mc-sk-head b{color:#edcc86}
@@ -9839,6 +9844,7 @@ function initModals() {
     const r = rarityOf(m || species);
     const els = elementsOf(species);
     const income = goldPerMin({ level, rarity: r.id }, stage);
+    const power = Math.round(stats.hp * 0.5 + stats.atk * 3 + stats.def * 2 + stats.spd * 1.5);
 
     $("#monsterModalTitle").innerHTML = rarityBadge(m || species, "lg")
       + " " + esc(m ? m.name : species.name);
@@ -9863,6 +9869,9 @@ function initModals() {
 
           <div class="mc-xp"><i style="width:${pct}%"></i></div>
           <div class="mc-xp-lbl"><span>${growth}</span><span>${fmt(xp)} / ${fmt(need)}</span></div>
+
+          <div class="mc-power" title="Сила — общий рейтинг монстра: здоровье, атака, защита и скорость.">
+            <span>✦ СИЛА</span><b>${fmt(power)}</b><small>общий рейтинг</small></div>
 
           <div class="mc-stats">
             <div><b>${stats.hp}</b><span>ЖИЗНЬ</span></div>
