@@ -2161,6 +2161,10 @@ button.mm-skill:disabled{cursor:default}
 
 </style>
 <style>
+<style>
+/* Станция поручений: один яркий маршрут вместо одинаковых синих кнопок. */
+.qt-guide{display:flex;gap:8px;align-items:flex-start;padding:10px 12px;border-radius:12px;background:rgba(81,174,158,.14);border:1px solid rgba(113,207,185,.35);font-size:11px;line-height:1.35}.qt-guide b{color:#c5f4df;white-space:nowrap}.qt-guide span{color:#d4ece8}.airship{padding:13px;border:2px solid #4a8794;border-radius:16px;background:linear-gradient(145deg,#153f50,#0e2d3e);color:#effcf7;box-shadow:var(--lift-sm)}.airship.ready{border-color:#e9bd5c}.airship p{margin:8px 0 0;color:#c6e3e6;font-size:11.5px;font-weight:700;line-height:1.4}.air-title{display:flex;align-items:center;gap:7px;font-family:var(--disp);font-size:14px}.air-title span{margin-left:auto;display:flex;gap:3px}.air-box{display:grid;place-items:center;width:25px;height:25px;border-radius:7px;background:#0b2634;border:1px dashed #7297a0;font-style:normal;font-size:13px}.air-box.full{background:#2f8b70;border-style:solid;border-color:#a3e4b2}.air-routes{display:grid;gap:6px;margin-top:10px}.air-route{display:grid;grid-template-columns:1fr auto;gap:2px;text-align:left;padding:9px 10px;border-radius:10px;color:#eafff8;background:#24596a;border:1px solid #73aeb3}.air-route b{font:800 12px var(--disp)}.air-route small{grid-column:1/2;color:#bde2dc;font-size:10px}.air-route:hover{background:#33778a}.airship .b{margin-top:9px;width:100%}@media(max-width:560px){.qt-guide{font-size:10px}.air-title{font-size:12px}.air-route{padding:8px}}
+</style>
 /* ===== css/grow.css ===== */
 /* Три карточки из src/ui/grow.js: что посадить (сетка сортов), что растёт
    (картинка + таймер + поторопить/собрать) и что вылупилось.
@@ -3743,7 +3747,7 @@ function serialize(state) {
     seenAt: Date.now(),
     gold: state.gold, food: state.food, crystals: state.crystals, nid: state.nid,
     team: state.team, adv: state.adv, dex: state.dex, dungeon: state.dungeon,
-    isle: state.isle, homes: state.homes, homeLevels: state.homeLevels, homeLayout: state.homeLayout, profile: state.profile, daily: state.daily,
+    isle: state.isle, homes: state.homes, homeLevels: state.homeLevels, homeLayout: state.homeLayout, profile: state.profile, daily: state.daily, airship: state.airship,
     builds: state.builds.map(b => ({
       id: b.id, type: b.type, el: b.el, i: b.i, j: b.j, lvl: b.lvl, isle: b.isle,
       gold: b.gold, goldT: b.goldT, slots: b.slots, eggs: b.eggs, breed: b.breed,
@@ -4976,6 +4980,7 @@ const S = {
   dex: [],          // Чуддекс: виды, которые хоть раз были у игрока
   profile: { level: 1, xp: 0 },    // стаж хозяина острова: открывает здания и возможности
   daily: null,      // задания дня — см. game/quests.js
+  airship: null,    // небесный караван: маршрут, ящики и время возвращения
   isle: FIRST_HOME, // на какой из своих островов игрок сейчас смотрит
   homes: { [FIRST_HOME]: true },   // какие острова уже куплены
   homeLevels: { [FIRST_HOME]: 1 }, // уровень расширения каждой площадки
@@ -6871,7 +6876,7 @@ const questReward = (t, level) => ({
 });
 
 /**
- * Бонус за все три задания разом. Кристалл здесь один — не для того, чтобы
+ * Бонус за все поручения разом. Кристалл здесь один — не для того, чтобы
  * заменить боссов странствий (те дают по десять), а чтобы у игрока, который
  * сегодня не дошёл до боя, тоже набегала тонкая струйка кристаллов.
  */
@@ -6885,7 +6890,7 @@ const bonusReward = level => ({
 /* ===== src/game/quests.js ===== */
 /* Ежедневные задания: состояние живёт в S.daily, шаблоны — в data/quests.js.
 
-   Три задания в день, выбранные из общего пула, плюс общий бонус за все три.
+   Четыре поручения на день, выбранные из общего пула, плюс общий бонус за все три.
    День сбрасывается по местным календарным суткам: как только меняется
    dayKey(), при первом же обращении (advance, dailyQuests, questsReady —
    все они сами зовут ensureDaily) старый набор тихо заменяется новым. Особый
@@ -6920,12 +6925,13 @@ function shuffled(list) {
 function ensureDaily() {
   const key = dayKey();
   if (S.daily && S.daily.date === key) return;
-  const rest = QUEST_POOL.filter(q => q.id !== "login");
-  const chosen = [questById("login"), ...shuffled(rest).slice(0, 2)];
+  const need = { breed:2, expedition:2, battle:3 };
+  const rest = QUEST_POOL.filter(q => q.id !== "login" && profileLevel() >= (need[q.id] || 1));
+  const chosen = shuffled(rest).slice(0, 4);
   S.daily = {
     date: key,
     quests: chosen.map(t => ({
-      id: t.id, have: t.id === "login" ? t.goal : 0, need: t.goal, claimed: false
+      id: t.id, have: 0, need: t.goal, claimed: false
     })),
     bonusClaimed: false
   };
@@ -6959,7 +6965,8 @@ function dailyQuests() {
 /** Сколько наград готовы к тому, чтобы их забрали, — бейдж на кнопке. */
 function questsReady() {
   ensureDaily();
-  return S.daily.quests.filter(q => q.have >= q.need && !q.claimed).length;
+  const a = ensureAirship();
+  return S.daily.quests.filter(q => q.have >= q.need && !q.claimed).length + (a.readyAt && a.readyAt <= Date.now() && !a.claimed ? 1 : 0);
 }
 
 /**
@@ -6975,6 +6982,8 @@ function claimQuest(id) {
   const reward = questReward(t, profileLevel());
   S.gold += reward.gold; S.food += reward.food;
   q.claimed = true;
+  const air = ensureAirship();
+  air.loaded = Math.min(3, S.daily.quests.filter(x => x.claimed).length);
 
   let bonus = null;
   if (!S.daily.bonusClaimed && S.daily.quests.every(x => x.claimed)) {
@@ -6983,9 +6992,15 @@ function claimQuest(id) {
     S.daily.bonusClaimed = true;
   }
   bus.emit("ui:top"); persist();
-  return { reward, bonus };
+  return { reward, bonus, loaded: ensureAirship().loaded };
 }
 
+
+/* ===== src/game/airship.js ===== */
+const AIRSHIP_ROUTES = [{id:"meadow",icon:"🌿",name:"Зелёная гавань",mins:90,gold:220,food:45,crystals:1},{id:"ruins",icon:"🏛️",name:"Кристальные руины",mins:150,gold:380,food:70,crystals:2},{id:"storm",icon:"⚡",name:"Грозовой разлом",mins:210,gold:620,food:100,crystals:3}];
+function ensureAirship(){ const date=(S.daily&&S.daily.date)||dayKey(); if(!S.airship||S.airship.date!==date) S.airship={date,loaded:0,route:null,readyAt:0,claimed:false}; return S.airship }
+function launchAirship(id){ const a=ensureAirship(),r=AIRSHIP_ROUTES.find(x=>x.id===id); if(!r||a.loaded<3||a.readyAt||a.claimed)return null; a.route=id;a.readyAt=Date.now()+r.mins*6e4;persist();return r }
+function claimAirship(){const a=ensureAirship(),r=AIRSHIP_ROUTES.find(x=>x.id===a.route);if(!r||!a.readyAt||a.readyAt>Date.now()||a.claimed)return null;S.gold+=r.gold;S.food+=r.food;S.crystals+=r.crystals;a.claimed=true;persist();bus.emit("ui:top");return r}
 
 /* ===== src/game/tower.js ===== */
 /* Башня высиживания: в свободное место кладут яйцо, через таймер оно
@@ -12693,7 +12708,7 @@ function initProfile() {
 /* Ежедневные задания: значок в шапке и окно со списком на сегодня.
 
    Весь прогресс живёт в game/quests.js — здесь только показ и кнопка
-   «забрать». Бонус за все три задания посчитан заранее и виден подсказкой
+   «забрать». Бонус за все поручения посчитан заранее и виден подсказкой
    ещё до того, как игрок начал их закрывать: понятно, ради чего стараться. */
 
 
@@ -12719,7 +12734,7 @@ function buildQuestDom() {
   questRoot.id = "quests";
   questRoot.innerHTML = `
     <div class="qt-head">
-      <h2>Задания на сегодня</h2>
+      <div><span class="qt-kicker">ЦЕНТР ОСТРОВА</span><h2>Поручения архипелага</h2></div>
       <button class="b sm x" id="qtClose">Закрыть</button>
     </div>
     <div class="qt-body" id="qtBody"></div>`;
@@ -12728,6 +12743,14 @@ function buildQuestDom() {
   questRoot.addEventListener("click", e => { if (e.target === questRoot) closeQuests() });
 }
 
+function goOrder(kind) {
+  closeQuests();
+  if (kind === "battle") return $("#advBtn").click();
+  if (kind === "buy") return $("#shopBtn").click();
+  if (kind === "feed") { const m = S.mons.find(monsterAvailable) || S.mons[0]; return m ? openMonster(m) : toast("Сначала вылупи первое чудище.", "bad"); }
+  const type = ({ harvest:"farm", gold:"habitat", hatch:"tower", expedition:"cave", breed:"breeding" })[kind];
+  const b = S.builds.find(x => x.type === type); if (b) openBuild(b); else toast("Это место ещё не построено на острове.", "bad");
+}
 function renderQuestWindow() {
   const list = dailyQuests();
   const allClaimed = list.every(q => q.claimed);
@@ -12749,7 +12772,7 @@ function renderQuestWindow() {
       </div>
       ${q.claimed
         ? `<span class="qt-state">получено</span>`
-        : `<button class="b sm ${ready ? "gold" : ""}" data-claim="${t.id}" ${ready ? "" : "disabled"}>забрать</button>`}
+        : `<button class="b sm ${ready ? "gold" : ""}" ${ready ? `data-claim="${t.id}"` : `data-go="${t.kind}"`}>${ready ? "забрать" : "к делу"}</button>`}
     </div>`;
   }).join("");
 
@@ -12758,10 +12781,25 @@ function renderQuestWindow() {
     : `<div class="qt-hero"><span class="qt-kicker">Следующий шаг</span><strong>${next ? esc(next.t.name) : "Забери награду"}</strong><p>${next ? esc(next.t.desc) : "Осталось забрать готовую награду."}</p></div>`;
   const bonusCard = allClaimed
     ? `<div class="qt-hint">Все награды уже у тебя. Завтра откроется новый набор.</div>`
-    : `<div class="qt-bonus"><span class="qt-bonus-icon">🎁</span><span><b>Бонус за все 3 задания</b>+${fmt(bonus.gold)} 🪙 · +${fmt(bonus.food)} 🍊 · ${bonus.crystals} 💎</span></div>`;
+    : `<div class="qt-bonus"><span class="qt-bonus-icon">🎁</span><span><b>Бонус за все поручения</b>+${fmt(bonus.gold)} 🪙 · +${fmt(bonus.food)} 🍊 · ${bonus.crystals} 💎</span></div>`;
 
-  $("#qtBody").innerHTML = `${hero}${bonusCard}<div class="qt-list">${rows}</div>`;
+  const a = ensureAirship();
+  const route = AIRSHIP_ROUTES.find(x => x.id === a.route);
+  const boxes = [0,1,2].map(i => `<i class="air-box ${i < a.loaded ? "full" : ""}">${i < a.loaded ? "📦" : "＋"}</i>`).join("");
+  const air = a.claimed
+    ? `<section class="airship"><div class="air-title">🛩️ <b>Небесный караван</b><span>${boxes}</span></div><p>Рейс завершён. Завтра прилетят новые поручения.</p></section>`
+    : a.readyAt && a.readyAt > Date.now()
+      ? `<section class="airship"><div class="air-title">🛩️ <b>Дирижабль летит в «${route.name}»</b><span>${boxes}</span></div><p>Вернётся через ${tleft(a.readyAt-Date.now())}. Загляни позже за грузом.</p></section>`
+      : a.readyAt
+        ? `<section class="airship ready"><div class="air-title">🛩️ <b>Дирижабль вернулся!</b><span>${boxes}</span></div><p>Груз из «${route.name}» ждёт в трюме.</p><button class="b gold" data-air-claim>Забрать груз</button></section>`
+        : a.loaded < 3
+          ? `<section class="airship"><div class="air-title">🛩️ <b>Небесный караван</b><span>${boxes}</span></div><p>Закрой и забери награду за 3 поручения — каждый заказ загрузит один ящик.</p></section>`
+          : `<section class="airship ready"><div class="air-title">🛩️ <b>Груз готов — выбери маршрут</b><span>${boxes}</span></div><p>Дальше путь — ценнее награда.</p><div class="air-routes">${AIRSHIP_ROUTES.map(r=>`<button class="air-route" data-route="${r.id}"><b>${r.icon} ${r.name}</b><small>${r.mins} мин · +${r.gold} 🪙 · ${r.crystals} 💎</small></button>`).join("")}</div></section>`;
+  $("#qtBody").innerHTML = `${hero}<div class="qt-guide"><b>Как работает караван</b><span>Поручение → награда → ящик → маршрут → редкий груз.</span></div>${bonusCard}<div class="qt-list">${rows}</div>${air}`;
 
+  $$("#quests [data-go]").forEach(btn => btn.onclick = () => goOrder(btn.dataset.go));
+  $$("#quests [data-route]").forEach(btn => btn.onclick = () => { const r=launchAirship(btn.dataset.route); if(r){ toast(`Дирижабль отправлен в «${r.name}». Вернись через ${r.mins} мин.`, "good"); renderQuestWindow(); } });
+  const cargo = $("#quests [data-air-claim]"); if(cargo) cargo.onclick = () => { const r=claimAirship(); if(r){ toast(`Груз получен: +${r.gold} золота, +${r.food} еды и ${r.crystals} кристалла.`, "good"); renderQuestWindow(); renderQuestBadge(); } };
   $$("#quests [data-claim]").forEach(btn => btn.onclick = () => {
     const r = claimQuest(btn.dataset.claim);
     if (!r) return;
@@ -13630,6 +13668,7 @@ function restore() {
   S.dex = d.dex || [];
   S.profile = Object.assign({ level: 1, xp: 0 }, d.profile || {});
   S.daily = d.daily || null;  // задания дня; если пусто или устарело — game/quests.js откроет новые сам
+  S.airship = d.airship || null;
   // острова: старое сохранение знало только первый, поэтому всё лежащее без
   // метки остаётся на нём, а купленные острова восстанавливаются как есть
   S.homes = Object.assign({ [FIRST_HOME]: true }, d.homes || {});
