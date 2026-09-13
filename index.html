@@ -3215,21 +3215,30 @@ function caravanPortalPoint(){const r=plotRect(HOMES[FIRST_HOME]);return{x:r.x+r
 function caravanFleetSlots(rank){
   if(rank>=3){
     const slots=[
-      {dx:-100,dy:-140,scale:88,flip:true,active:false},
-      {dx:100,dy:-115,scale:92,flip:false,active:true},
+      {dx:100,dy:-115,scale:92,flip:false},
+      {dx:-100,dy:-140,scale:88,flip:true},
     ];
-    if(rank>=4)slots.push({dx:78,dy:-195,scale:80,flip:false,active:false});
+    if(rank>=4)slots.push({dx:78,dy:-195,scale:80,flip:false});
     return slots;
   }
-  return [{dx:0,dy:-108,scale:155,flip:false,active:true}];
+  return [{dx:0,dy:-108,scale:155,flip:false}];
 }
 function drawCaravanShip(c,p,slot,takeoff){
-  const x=p.x+slot.dx+(slot.active?takeoff*560:0),y=p.y+slot.dy-(slot.active?takeoff*240:0);
-  const opt={lift:Math.sin(clock.now/700+slot.dx)*4,alpha:slot.active?1-takeoff:1};
+  const x=p.x+slot.dx+takeoff*560,y=p.y+slot.dy-takeoff*240;
+  const opt={lift:Math.sin(clock.now/700+slot.dx)*4,alpha:1-takeoff};
   if(slot.flip){c.save();c.translate(x,y);c.scale(-1,1);drawSprite(c,"caravanShip",0,0,slot.scale,opt);c.restore()}
   else drawSprite(c,"caravanShip",x,y,slot.scale,opt);
 }
-function drawCaravanPortal(c){const p=caravanPortalPoint(),a=ensureAirship();drawSprite(c,airshipVisualKey(),p.x,p.y,CARAVAN_PORTAL.width);const flying=a.readyAt&&!a.claimed&&a.readyAt>Date.now();const takeoff=flying?clamp((Date.now()-(a.departAt||Date.now()))/1900,0,1):0;for(const slot of caravanFleetSlots(airshipRank())){if(slot.active&&flying&&takeoff>=1)continue;drawCaravanShip(c,p,slot,takeoff)}}
+/* Каждый пришвартованный дирижабль отвечает за свой рейс: i-й корабль уходит
+   в небо, пока летит i-й рейс, и возвращается к причалу, когда груз ждёт
+   разгрузки. Свободные места у причала просто стоят на виду. */
+function drawCaravanPortal(c){const p=caravanPortalPoint(),trips=airshipTrips();drawSprite(c,airshipVisualKey(),p.x,p.y,CARAVAN_PORTAL.width);
+caravanFleetSlots(airshipRank()).forEach((slot,i)=>{
+  const t=trips[i],flying=!!t&&t.readyAt>Date.now();
+  const takeoff=flying?clamp((Date.now()-(t.departAt||Date.now()))/1900,0,1):0;
+  if(flying&&takeoff>=1)return;
+  drawCaravanShip(c,p,slot,takeoff);
+})}
 function caravanPortalHit(x,y){const p=caravanPortalPoint();return spriteHit(airshipVisualKey(),p.x,p.y,CARAVAN_PORTAL.width,x,y)}
 function dungeonPortalHit(x, y) {
   const p = dungeonPortalPoint(), key = dungeonVisualKey();
@@ -5707,20 +5716,31 @@ function drawBuilding(c, b, t) {
   else drawReady(c, b, t);
 }
 
-/** Пузырь награды над зданием. Возвращает точку и радиус для попадания. */
+/**
+ * Кнопка награды над зданием. Квадратная и крупная: по круглому пузырю
+ * диаметром 38 на телефоне попадали с трудом, особенно по еде у грядки.
+ * Возвращает точку и полуширину — хит-бокс тоже квадратный, по всей кнопке.
+ */
+const BUBBLE = { half: 27, round: 13 };
 function drawBubble(c, x, y, kind, t) {
-  const bob = Math.sin(t * 3) * 3;
+  /* Отдалённый остров не должен превращать кнопку в точку: на экране она
+     держит один и тот же размер, поэтому в мировых единицах растёт по мере
+     отдаления. Приближение оставляем как было — там попасть и так легко. */
+  const k = 1 / Math.min(1, cam.z || 1);
+  const bob = Math.sin(t * 3) * 3 * k, h = BUBBLE.half * k;
+  const cy = 8 * k - h;          // центр квадрата: низом он садится на хвостик
   c.save(); c.translate(x, y + bob);
-  c.beginPath(); c.moveTo(0, 16); c.lineTo(-7, 7); c.lineTo(7, 7); c.closePath();
-  c.fillStyle = "#fff"; c.strokeStyle = OUTLINE; c.lineWidth = 3; c.stroke(); c.fill();
-  oval(c, 0, -6, 19, 19, "#FFF6E3", OUTLINE, 3);
+  c.beginPath(); c.moveTo(0, 18 * k); c.lineTo(-9 * k, 8 * k); c.lineTo(9 * k, 8 * k); c.closePath();
+  c.fillStyle = "#fff"; c.strokeStyle = OUTLINE; c.lineWidth = 3 * k; c.stroke(); c.fill();
+  c.beginPath(); c.roundRect(-h, cy - h, h * 2, h * 2, BUBBLE.round * k);
+  c.fillStyle = "#FFF6E3"; c.fill(); c.strokeStyle = OUTLINE; c.lineWidth = 3 * k; c.stroke();
   if (kind === "egg") {                            // готовое яйцо из сада
-    oval(c, 0, -6, 8, 10, "#FFFDF4", OUTLINE, 2.4);
-    oval(c, -2.5, -9, 2.6, 3.2, "rgba(255,255,255,.9)", null);
-    heart(c, 8, -13, 4, "#FF7FB0");
-  } else icon(c, kind === "gold" ? "gold" : "food", 0, -6, 26);
+    oval(c, 0, cy, 11 * k, 14 * k, "#FFFDF4", OUTLINE, 2.4 * k);
+    oval(c, -3.5 * k, cy - 4 * k, 3.6 * k, 4.4 * k, "rgba(255,255,255,.9)", null);
+    heart(c, 11 * k, cy - 10 * k, 5.5 * k, "#FF7FB0");
+  } else icon(c, kind === "gold" ? "gold" : "food", 0, cy, 38 * k);
   c.restore();
-  return { x, y: y + bob - 6, r: 21 };
+  return { x, y: y + bob + cy, half: h };
 }
 
 /* Короткая метка состояния над постройкой. Она отвечает на вопрос новичка
@@ -6454,20 +6474,20 @@ function drawWorld() {
         const spot = bubbleSpot(b, 78);
         const bb = drawBubble(ctx, spot.x, spot.y, "gold", clock.now);
         const sc = worldToScreen(bb.x, bb.y);
-        bubbles.push({ b, kind: "gold", x: sc.x, y: sc.y, r: bb.r * cam.z });
+        bubbles.push({ b, kind: "gold", x: sc.x, y: sc.y, half: bb.half * cam.z });
       }
     }
     if (b.type === "breeding" && b.breed && Date.now() >= b.breed.readyAt) {
       const spot = bubbleSpot(b, 90);
       const bb = drawBubble(ctx, spot.x, spot.y, "egg", clock.now);
       const sc = worldToScreen(bb.x, bb.y);
-      bubbles.push({ b, kind: "egg", x: sc.x, y: sc.y, r: bb.r * cam.z });
+      bubbles.push({ b, kind: "egg", x: sc.x, y: sc.y, half: bb.half * cam.z });
     }
     if (b.type === "farm" && (b.slots || []).some(s => s && s.crop != null && Date.now() >= s.readyAt)) {
       const spot = bubbleSpot(b, 66);
       const bb = drawBubble(ctx, spot.x, spot.y, "food", clock.now);
       const sc = worldToScreen(bb.x, bb.y);
-      bubbles.push({ b, kind: "food", x: sc.x, y: sc.y, r: bb.r * cam.z });
+      bubbles.push({ b, kind: "food", x: sc.x, y: sc.y, half: bb.half * cam.z });
     }
     // «сюда можно поселить» — стрелка над подходящим логовом
     if (стрелки && стрелки.includes(b.id)) drawHomeArrow(ctx, b, clock.now);
@@ -7077,7 +7097,7 @@ function dailyQuests() {
 function questsReady() {
   ensureDaily();
   const a = ensureAirship();
-  return S.daily.quests.filter(q => q.have >= q.need && !q.claimed).length + (a.readyAt && a.readyAt <= Date.now() && !a.claimed ? 1 : 0);
+  return S.daily.quests.filter(q => q.have >= q.need && !q.claimed).length + a.trips.filter(tripDone).length;
 }
 
 /**
@@ -7123,25 +7143,60 @@ const AIRSHIP_CONTRACTS = [
 const AIRSHIP_ROUTES=AIRSHIP_CONTRACTS;
 const AIRSHIP_UPGRADES=[null,{need:1,cost:0},{need:5,cost:12000},{need:12,cost:60000},{need:20,cost:220000}];
 const AIRSHIP_TASK_LABELS={harvest:"Собери урожай",gold:"Собери золото",feed:"Покорми чудищ",hatch:"Вылупи яйцо",breed:"Скрести чудищ",expedition:"Пройди экспедицию"};
+/* Рейсов одновременно столько же, сколько дирижаблей пришвартовано у гавани
+   (см. caravanFleetSlots): на 3 уровне два, на 4 — три. Раньше рейс был
+   ровно один, и пока он летел, остальные поставки было не отправить. */
+function airshipSlots(lvl){const n=clamp(+lvl||1,1,4);return n>=4?3:n>=3?2:1}
 function shuffled(a){return [...a].sort(()=>Math.random()-.5)}
 function makeAirshipContracts(){return AIRSHIP_CONTRACTS.map(c=>{const v=shuffled(c.variants)[0];return{id:c.id,tasks:v.map(([kind,need])=>({kind,need,have:0}))}})}
-function ensureAirship(){const date=(S.daily&&S.daily.date)||dayKey(),old=S.airship||{};if(!S.airship||S.airship.date!==date)S.airship={date,route:null,readyAt:0,claimed:false,lvl:old.lvl||1,guards:[],contracts:makeAirshipContracts()};S.airship.lvl=clamp(+S.airship.lvl||1,1,4);S.airship.guards=Array.isArray(S.airship.guards)?S.airship.guards:[];if(!Array.isArray(S.airship.contracts)||!S.airship.contracts.length)S.airship.contracts=makeAirshipContracts();
-/* Лечим рейс, который уже невозможно забрать. Сохранения, сделанные до
-   правки claimAirship(), застряли с claimed=true при живом readyAt: награду
-   тогда выдали, а состояние не сбросили — экран навсегда показывал «груз
-   ждёт в трюме», и каждый клик по кнопке умирал на той же проверке внутри
-   claimAirship(). Сюда же попадает рейс с потерянным маршрутом. */
-const stuckClaimed=!!S.airship.claimed,lostRoute=S.airship.readyAt&&!AIRSHIP_CONTRACTS.some(c=>c.id===S.airship.route);
-if(stuckClaimed||lostRoute){S.airship.route=null;S.airship.readyAt=0;S.airship.departAt=0;S.airship.success=false;S.airship.claimed=false;S.airship.guards=[]}
-return S.airship}
+function ensureAirship(){const date=(S.daily&&S.daily.date)||dayKey(),old=S.airship||{};if(!S.airship||S.airship.date!==date)S.airship={date,lvl:old.lvl||1,guards:[],trips:[],contracts:makeAirshipContracts()};S.airship.lvl=clamp(+S.airship.lvl||1,1,4);S.airship.guards=Array.isArray(S.airship.guards)?S.airship.guards:[];if(!Array.isArray(S.airship.contracts)||!S.airship.contracts.length)S.airship.contracts=makeAirshipContracts();
+const a=S.airship;
+if(!Array.isArray(a.trips))a.trips=[];
+/* Раньше рейс жил прямо в a.route/a.readyAt и был всего один. Переносим его
+   в список рейсов, чтобы старое сохранение не потеряло груз в пути, и тут же
+   убираем поля-одиночки. Уже забранный (claimed) рейс переносить нечего —
+   именно он раньше и застревал, намертво вешая кнопку «Забрать груз». */
+if(a.readyAt&&!a.claimed&&AIRSHIP_CONTRACTS.some(c=>c.id===a.route))
+  a.trips.push({route:a.route,departAt:a.departAt||0,readyAt:a.readyAt,success:!!a.success,guards:[...a.guards]});
+if("route" in a||"readyAt" in a){delete a.route;delete a.readyAt;delete a.departAt;delete a.success;delete a.claimed;a.guards=[]}
+/* Рейс с неизвестным маршрутом забрать невозможно — такой мусор выкидываем.
+   Чистим строго на месте: ensureAirship() зовут отовсюду, и если пересоздать
+   массив, то любая уже взятая ссылка на a.trips станет мусорной, а push в неё
+   молча потеряется (ровно так и терялась отправка нового рейса). */
+for(let i=a.trips.length-1;i>=0;i--){const t=a.trips[i];
+  if(!t||!t.readyAt||!AIRSHIP_CONTRACTS.some(c=>c.id===t.route))a.trips.splice(i,1);
+  else if(!Array.isArray(t.guards))t.guards=[]}
+if(a.trips.length>airshipSlots(a.lvl))a.trips.length=airshipSlots(a.lvl);
+return a}
+/** Рейсы, которые сейчас в воздухе или ждут разгрузки. */
+function airshipTrips(){return ensureAirship().trips}
+/** Рейс этого маршрута, если он уже отправлен. */
+function tripOf(routeId){return airshipTrips().find(t=>t.route===routeId)||null}
+/** Свободных дирижаблей у гавани. */
+function freeAirshipSlots(){const a=ensureAirship();return Math.max(0,airshipSlots(a.lvl)-a.trips.length)}
+/** Готов к разгрузке — прилетел и ещё не забран. */
+function tripDone(t){return !!t&&t.readyAt&&t.readyAt<=Date.now()}
 function airshipRank(){return ensureAirship().lvl} function airshipVisualKey(){return "caravan"+airshipRank()} function upgradeAirship(){const a=ensureAirship(),n=airshipRank()+1,u=AIRSHIP_UPGRADES[n];if(!u)return toast("Небесный караван уже 4 уровня", "good");if(profileLevel()<u.need)return toast(`Нужен ${u.need} уровень хозяина острова`,"bad");if(S.gold<u.cost)return toast("Не хватает золота", "bad");S.gold-=u.cost;a.lvl=n;persist();bus.emit("ui:top");toast(`Небесный караван улучшен до ${n} уровня!`,"good");if(questsOpen())renderQuestWindow()}
-function airshipContract(id){const a=ensureAirship(),base=AIRSHIP_CONTRACTS.find(x=>x.id===id),state=a.contracts.find(x=>x.id===id);return base&&state?{...base,...state}:null} function contractReady(c){return !!c&&c.tasks.every(t=>t.have>=t.need)} function advanceAirshipContracts(kind,n=1){const a=ensureAirship();if(a.readyAt||a.claimed)return false;let changed=false;a.contracts.forEach(c=>c.tasks.forEach(t=>{if(t.kind===kind&&t.have<t.need){t.have=Math.min(t.need,t.have+n);changed=true}}));return changed}
-function airshipGuards(){const a=ensureAirship();return a.guards.map(id=>S.mons.find(m=>m.id===id)).filter(Boolean)} function airshipChance(route){const g=airshipGuards(),power=g.reduce((n,m)=>n+powerOf(m),0);return clamp(Math.round(58+g.length*7+Math.min(28,power/(route.need*48))),45,98)} function toggleAirshipGuard(id){const a=ensureAirship();if(a.readyAt)return;const i=a.guards.indexOf(id);if(i>=0)a.guards.splice(i,1);else {const m=S.mons.find(x=>x.id===id);if(!m||!monsterAvailable(m))return;if(a.guards.length>=3)return toast("На поставку можно назначить только 3 охранников", "bad");a.guards.push(id)}persist();if(questsOpen())renderQuestWindow()} function launchAirship(id){const a=ensureAirship(),r=airshipContract(id);if(!r||!contractReady(r)||a.readyAt||a.claimed)return null;if(!a.guards.length){toast("Назначь хотя бы одного охранника груза", "bad");return null}a.route=id;a.departAt=Date.now();a.success=Math.random()*100<airshipChance(r);a.readyAt=Date.now()+r.mins*6e4;syncTeam();persist();return r}
-/* После разгрузки дирижабль должен тут же освободиться под новый рейс —
-   контрактов на выбор три, и раньше a.claimed навсегда застревал в true,
-   а readyAt никогда не сбрасывался: экран намертво зависал на «забрать
-   груз», и запустить дирижабль снова не давал даже launchAirship(). */
-function claimAirship(){const a=ensureAirship(),r=airshipContract(a.route);if(!r||!a.readyAt||a.readyAt>Date.now()||a.claimed)return null;const success=!!a.success;if(success){S.gold+=r.gold;S.food+=r.food;S.crystals+=r.crystals}a.route=null;a.readyAt=0;a.departAt=0;a.success=false;a.claimed=false;a.guards=[];syncTeam();persist();bus.emit("ui:top");return {route:r,success}}
+function airshipContract(id){const a=ensureAirship(),base=AIRSHIP_CONTRACTS.find(x=>x.id===id),state=a.contracts.find(x=>x.id===id);return base&&state?{...base,...state}:null} function contractReady(c){return !!c&&c.tasks.every(t=>t.have>=t.need)} function advanceAirshipContracts(kind,n=1){const a=ensureAirship();let changed=false;a.contracts.forEach(c=>c.tasks.forEach(t=>{if(t.kind===kind&&t.have<t.need){t.have=Math.min(t.need,t.have+n);changed=true}}));return changed}
+function airshipGuards(){const a=ensureAirship();return a.guards.map(id=>S.mons.find(m=>m.id===id)).filter(Boolean)} function airshipChance(route){const g=airshipGuards(),power=g.reduce((n,m)=>n+powerOf(m),0);return clamp(Math.round(58+g.length*7+Math.min(28,power/(route.need*48))),45,98)} function toggleAirshipGuard(id){const a=ensureAirship();const i=a.guards.indexOf(id);if(i>=0)a.guards.splice(i,1);else {const m=S.mons.find(x=>x.id===id);if(!m||!monsterAvailable(m))return;if(a.guards.length>=3)return toast("На поставку можно назначить только 3 охранников", "bad");a.guards.push(id)}persist();if(questsOpen())renderQuestWindow()} function launchAirship(id){const a=ensureAirship(),r=airshipContract(id);if(!r||!contractReady(r))return null;
+if(tripOf(id)){toast("Этот груз уже в пути","bad");return null}
+if(freeAirshipSlots()<=0){toast("Все дирижабли в рейсе — дождись возвращения","bad");return null}
+if(!a.guards.length){toast("Назначь хотя бы одного охранника груза", "bad");return null}
+const успех=Math.random()*100<airshipChance(r),охрана=[...a.guards];
+a.trips.push({route:id,departAt:Date.now(),readyAt:Date.now()+r.mins*6e4,success:успех,guards:охрана});
+a.guards=[];syncTeam();persist();return r}
+/* Разгружаем один рейс: по маршруту, если игрок нажал кнопку у конкретного,
+   иначе первый прилетевший. Рейс уходит из списка целиком, поэтому дирижабль
+   сразу свободен под новую поставку. */
+function claimAirship(routeId){const a=ensureAirship();
+const i=a.trips.findIndex(t=>(routeId==null||t.route===routeId)&&tripDone(t));
+if(i<0)return null;
+const t=a.trips[i],r=airshipContract(t.route);
+a.trips.splice(i,1);
+if(!r){syncTeam();persist();return null}
+const success=!!t.success;
+if(success){S.gold+=r.gold;S.food+=r.food;S.crystals+=r.crystals}
+syncTeam();persist();bus.emit("ui:top");return {route:r,success}}
 
 /* ===== src/game/tower.js ===== */
 /* Башня высиживания: в свободное место кладут яйцо, через таймер оно
@@ -8579,7 +8634,7 @@ const onBreeding = m =>
 function monsterBusyInfo(m) {
   if (!m) return null;
   const garden = S.builds.find(b => b.breed && (b.breed.a === m.id || b.breed.b === m.id));
-  const air=ensureAirship(); if(air.readyAt && !air.claimed && (air.guards||[]).includes(m.id)) return { kind: "airship", text: "охраняет небесную поставку" };
+  if (airshipTrips().some(t => (t.guards || []).includes(m.id))) return { kind: "airship", text: "охраняет небесную поставку" };
   if (garden) return { kind: "breeding", text: "в саду разведения" };
   const cave = S.builds.find(b => b.exp && (b.exp.mons || []).includes(m.id));
   if (cave) {
@@ -13045,7 +13100,7 @@ function buildCaravanDom(){
 `; document.head.append(st); $("#app").append(caravanRoot);
   caravanRoot.querySelector("#caravanClose").onclick=closeCaravan;
   caravanRoot.querySelector(".caravan-tabs").onclick=e=>{const b=e.target.closest("[data-clvl]");if(b){caravanRoot.dataset.level=b.dataset.clvl;renderCaravan()}};
-  caravanRoot.querySelector(".caravan-content").onclick=e=>{const c=e.target.closest("[data-ccontract]");if(c){caravanRoot.dataset.contract=c.dataset.ccontract;renderCaravan();return}const g=e.target.closest("[data-cguard]");if(g){toggleAirshipGuard(+g.dataset.cguard);renderCaravan();return}if(e.target.closest("[data-cup]")){upgradeAirship();renderCaravan();return}const r=e.target.closest("[data-croute]");if(r){const launched=launchAirship(r.dataset.croute);if(launched){toast(`Дирижабль отправлен в «${launched.name}».`,"good");renderCaravan()}return}if(e.target.closest("[data-cclaim]")){const cargo=claimAirship();if(cargo)toast(cargo.success?`Груз получен: +${cargo.route.gold} золота, +${cargo.route.food} еды и ${cargo.route.crystals} кристалла.`:"Поставку перехватили: охрана вернулась, но груз потерян.",cargo.success?"good":"bad");else toast("Этот груз уже забран — дирижабль готов к новому рейсу.");
+  caravanRoot.querySelector(".caravan-content").onclick=e=>{const c=e.target.closest("[data-ccontract]");if(c){caravanRoot.dataset.contract=c.dataset.ccontract;renderCaravan();return}const g=e.target.closest("[data-cguard]");if(g){toggleAirshipGuard(+g.dataset.cguard);renderCaravan();return}if(e.target.closest("[data-cup]")){upgradeAirship();renderCaravan();return}const r=e.target.closest("[data-croute]");if(r){const launched=launchAirship(r.dataset.croute);if(launched){toast(`Дирижабль отправлен в «${launched.name}».`,"good");renderCaravan()}return}const cl=e.target.closest("[data-cclaim]");if(cl){const cargo=claimAirship(cl.dataset.cclaim||null);if(cargo)toast(cargo.success?`Груз получен: +${cargo.route.gold} золота, +${cargo.route.food} еды и ${cargo.route.crystals} кристалла.`:"Поставку перехватили: охрана вернулась, но груз потерян.",cargo.success?"good":"bad");else toast("Этот груз уже забран — дирижабль готов к новому рейсу.");
 /* Перерисовываем в любом случае: когда забирать уже нечего, кнопка обязана
    исчезнуть, а не молча висеть на мёртвом состоянии. Именно это молчание
    и прятало застрявший рейс. */
@@ -13054,17 +13109,25 @@ renderCaravan();renderQuestBadge();return}if(e.target.closest("[data-corders]"))
 function renderCaravan(){
  if(!caravanRoot)return;
  const tabsScroll=caravanRoot.querySelector(".caravan-tabs")?.scrollLeft||0,guardScroll=caravanRoot.querySelector(".caravan-guard-list")?.scrollLeft||0;
- const a=ensureAirship(),rank=airshipRank(),selectedLevel=clamp(+(caravanRoot.dataset.level||rank),1,4),next=AIRSHIP_UPGRADES[rank+1],route=airshipContract(a.route),guards=airshipGuards(),pool=S.mons.filter(monsterAvailable).sort((x,y)=>powerOf(y)-powerOf(x)).slice(0,8);
+ const a=ensureAirship(),rank=airshipRank(),selectedLevel=clamp(+(caravanRoot.dataset.level||rank),1,4),next=AIRSHIP_UPGRADES[rank+1],guards=airshipGuards(),pool=S.mons.filter(monsterAvailable).sort((x,y)=>powerOf(y)-powerOf(x)).slice(0,8);
+ const fleet=airshipSlots(rank),trips=a.trips,свободно=fleet-trips.length;
  const available=AIRSHIP_CONTRACTS.filter(c=>c.need===selectedLevel),selectedId=caravanRoot.dataset.contract,selected=airshipContract(available.some(c=>c.id===selectedId)?selectedId:available[0].id);caravanRoot.dataset.contract=selected.id;
  caravanRoot.querySelector(".caravan-tabs").innerHTML=[1,2,3,4].map(n=>`<button class="caravan-tab ${n===selectedLevel?"on":""} ${n>rank?"lock":""}" data-clvl="${n}">${n>rank?"🔒 ":""}Ур. ${n}<br><small>${n===1?"первые рейсы":n===2?"дальние грузы":n===3?"редкие товары":"звёздный путь"}</small></button>`).join("");
- const cards=available.map(base=>{const c=airshipContract(base.id),done=contractReady(c),progress=c.tasks.reduce((n,t)=>n+Math.min(t.have,t.need),0),total=c.tasks.reduce((n,t)=>n+t.need,0);return `<button class="caravan-route ${c.id===selected.id?"on":""}" data-ccontract="${c.id}"><b>${c.icon} ${esc(c.name)}</b><small>${c.tier} · ${c.mins} мин<br>${progress}/${total} задач · +${c.gold} ${gold} · ${c.crystals} ${crystal} ${done?"· ✓ готово":""}</small></button>`}).join("");
+ const cards=available.map(base=>{const c=airshipContract(base.id),done=contractReady(c),вПути=!!tripOf(c.id),progress=c.tasks.reduce((n,t)=>n+Math.min(t.have,t.need),0),total=c.tasks.reduce((n,t)=>n+t.need,0);return `<button class="caravan-route ${c.id===selected.id?"on":""}" data-ccontract="${c.id}"><b>${c.icon} ${esc(c.name)}</b><small>${c.tier} · ${c.mins} мин<br>${progress}/${total} задач · +${c.gold} ${gold} · ${c.crystals} ${crystal} ${вПути?"· 🛩️ в пути":done?"· ✓ готово":""}</small></button>`}).join("");
  const tasks=`<div class="caravan-guards"><b>${selected.icon} ${esc(selected.name)} · ${selected.tier}</b><small>Вариант контракта на сегодня. Завтра условия этого маршрута поменяются.</small><div class="contract-tasks">${selected.tasks.map(t=>`<span class="${t.have>=t.need?"done":""}">${t.have>=t.need?"✓":"○"} ${AIRSHIP_TASK_LABELS[t.kind]} · ${t.have}/${t.need}</span>`).join("")}</div></div>`;
- let status="";
- if(a.readyAt&&a.readyAt>Date.now())status=`<div class="caravan-status">🛩️ Дирижабль в пути к «${esc(route&&route.name||"маршруту") }» · вернётся через ${tleft(a.readyAt-Date.now())}</div>`;
- else if(a.readyAt)status=`<div class="caravan-status">📦 Дирижабль вернулся. Груз ждёт в трюме.</div><button class="b gold" data-cclaim>Забрать груз</button>`;
- else if(selectedLevel>rank)status=`<div class="caravan-status">🔒 Улучши караван до ${selectedLevel} уровня, чтобы открыть эти поставки.</div>`;
- else if(!contractReady(selected))status=`<div class="caravan-status">Выполни условия выбранного контракта — затем назначь охрану и отправляй дирижабль.</div>${tasks}`;
- else {const gp=`<div class="caravan-guards"><b>Охрана груза · ${guards.length}/3</b><small>Выбери от 1 до 3 свободных монстров. Их сила повышает шанс безопасной доставки.</small><div class="caravan-guard-list">${pool.map(m=>`<button class="caravan-guard ${a.guards.includes(m.id)?"on":""}" data-cguard="${m.id}"><i class="caravan-guard-face" style="background-image:url(&quot;${monsterPortrait(m)}&quot;)"></i><b>${esc(m.name)}</b><em>⚔ ${fmt(powerOf(m))}</em></button>`).join("")}</div></div>`;status=`<div class="caravan-status">Контракт готов. Шанс успешной доставки: ${guards.length?airshipChance(selected):"—"}%.</div>${tasks}${gp}<button class="b gold" data-croute="${selected.id}">Отправить дирижабль · ${selected.mins} мин</button>`}
+ /* Сначала все рейсы, что уже в небе или ждут разгрузки, — у каждого своя
+    кнопка. Ниже — отправка новой поставки, пока у причала есть свободный
+    дирижабль: на 3 уровне их два, на 4 — три. */
+ let status=trips.map(t=>{const r=airshipContract(t.route),имя=esc(r&&r.name||"маршруту");
+   return t.readyAt>Date.now()
+     ? `<div class="caravan-status">🛩️ «${имя}» · вернётся через ${tleft(t.readyAt-Date.now())}</div>`
+     : `<div class="caravan-status">📦 «${имя}» вернулся. Груз ждёт в трюме.</div><button class="b gold" data-cclaim="${t.route}">Забрать груз · ${имя}</button>`}).join("");
+ if(fleet>1)status+=`<div class="caravan-status">✦ Дирижаблей у гавани: ${fleet} · свободно ${свободно}</div>`;
+ if(свободно<=0)status+=`<div class="caravan-status">Все дирижабли в рейсе — дождись возвращения.</div>`;
+ else if(selectedLevel>rank)status+=`<div class="caravan-status">🔒 Улучши караван до ${selectedLevel} уровня, чтобы открыть эти поставки.</div>`;
+ else if(tripOf(selected.id))status+=`<div class="caravan-status">Этот груз уже в пути — выбери другую поставку.</div>`;
+ else if(!contractReady(selected))status+=`<div class="caravan-status">Выполни условия выбранного контракта — затем назначь охрану и отправляй дирижабль.</div>${tasks}`;
+ else {const gp=`<div class="caravan-guards"><b>Охрана груза · ${guards.length}/3</b><small>Выбери от 1 до 3 свободных монстров. Их сила повышает шанс безопасной доставки.</small><div class="caravan-guard-list">${pool.map(m=>`<button class="caravan-guard ${a.guards.includes(m.id)?"on":""}" data-cguard="${m.id}"><i class="caravan-guard-face" style="background-image:url(&quot;${monsterPortrait(m)}&quot;)"></i><b>${esc(m.name)}</b><em>⚔ ${fmt(powerOf(m))}</em></button>`).join("")}</div></div>`;status+=`<div class="caravan-status">Контракт готов. Шанс успешной доставки: ${guards.length?airshipChance(selected):"—"}%.</div>${tasks}${gp}<button class="b gold" data-croute="${selected.id}">Отправить дирижабль · ${selected.mins} мин</button>`}
  const up=next?`<button class="b" data-cup>Улучшить караван до ур. ${rank+1} · ${fmt(next.cost)} ${gold}</button>`:`<div class="caravan-status">✦ Караван достиг максимального, 4 уровня.</div>`;
  caravanRoot.querySelector(".caravan-content").innerHTML=`<article class="caravan-hero"><img class="caravan-art" src="${caravanStageArt(selectedLevel)}" alt="Небесный караван, уровень ${selectedLevel}"><div class="caravan-copy"><h3>Небесный караван</h3><p>На каждом уровне доступны три разных поставки. У каждой — свои условия, риск и награды.</p><div class="caravan-routes">${cards}</div>${status}<div class="caravan-actions">${up}<button class="b sm" data-corders>Ежедневные поручения</button></div></div></article>`;
  /* Список вкладок и список охраны перерисовываются на каждый тап (выбор
@@ -14102,8 +14165,9 @@ function onTap(x, y) {
   if (S.battle) return;
   if (S.ghost) return placeGhost();
 
+  // запас вокруг кнопки: палец толще курсора, а собирать приходится часто
   for (const bb of bubbles)
-    if (Math.hypot(x - bb.x, y - bb.y) < bb.r + 8) return collect(bb);
+    if (Math.abs(x - bb.x) <= bb.half + 10 && Math.abs(y - bb.y) <= bb.half + 10) return collect(bb);
 
   const portalPoint = screenToWorld(x, y);
   if (dungeonPortalHit(portalPoint.x, portalPoint.y)) return openDungeon();
