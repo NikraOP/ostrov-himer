@@ -5335,6 +5335,30 @@ function placeMonster(m) {
   return true;
 }
 
+/** Логова, подходящие этому чудищу по стихии, — и полные тоже: в карточке
+    они видны заблокированными, иначе непонятно, почему выбор так мал. */
+const homesForMonster = m => homeElements(m).flatMap(el => habitatsFor(el));
+
+/**
+ * Переселить чудище в выбранное логово. Раньше логово выбирала только
+ * placeMonster() при вылуплении, и переселить потом было нельзя.
+ * Возвращает текст ошибки или null.
+ */
+function moveMonsterHome(m, id) {
+  const b = S.builds.find(x => x.id === id && x.type === "habitat");
+  if (!b || !isReady(b)) return "Логово ещё не достроено";
+  if (!homeElements(m).includes(b.el)) return "Это логово другой стихии";
+  if (m.home === b.id) return null;
+  if (!habitatHasRoom(b)) return "В этом логове нет места";
+  m.home = b.id;
+  m.isle = isleOf(b);
+  const s = BUILDINGS.habitat.size;
+  m.u = m.tu = rnd(s - 0.6, 0.6);
+  m.v = m.tv = rnd(s - 0.6, 0.6);
+  persist();
+  return null;
+}
+
 /** Отправить монстра бродить по острову рядом с точкой (i,j). */
 function setWandering(m, i, j, isle) {
   m.home = null;
@@ -7153,10 +7177,13 @@ function freeSlot(b) {
  * Возвращает текст ошибки или null.
  */
 function startEgg(data, ms) {
-  const b = anyTower();
-  if (!b) return "Нужна башня высиживания";
+  if (!anyTower()) return "Нужна башня высиживания";
+  /* Башен может быть несколько, и вторую как раз и ставят, когда в первой
+     места кончились. Раньше брали towers()[0] и на полной первой башне
+     отвечали «все места заняты», хотя рядом стояла пустая. */
+  const b = towers().find(t => freeSlot(t) >= 0);
+  if (!b) return "Все места в башнях заняты — улучши башню или поставь ещё одну";
   const slot = freeSlot(b);
-  if (slot < 0) return "Все места в башне заняты — улучши башню";
   b.eggs[slot] = { dur: ms, readyAt: Date.now() + ms, el: data.el, data };
   persist();
   bus.emit("sheet:build", b);
@@ -9918,6 +9945,8 @@ let openId = null;
    бой, а девять строк раскрываются по «изменить». Состояние живёт здесь,
    потому что карточка перерисовывается на каждый выбор. */
 let skillsOpen = false;
+/* Выбор логова свёрнут по той же причине и тем же способом. */
+let homesOpen = false;
 
 /** Можно ли трогать набор: пятый лишний, а последний снимать нельзя. */
 function esть_проверка(есть, сейчас) {
@@ -10092,6 +10121,37 @@ function initModals() {
             }).join("")}
           </div>
 
+          <!-- Куда селить: логово выбирает игрок, а не только автоподбор при
+               вылуплении. Строки те же, что у приёмов, поэтому и стили общие. -->
+          ${m ? (() => {
+            const дом = m.home ? S.builds.find(b => b.id === m.home) : null;
+            const годные = homesForMonster(m);
+            const подпись = дом
+              ? `${ELEMENTS[дом.el].name} · ${дом.lvl} ур.`
+              : "гуляет по острову";
+            const строки = годные.map(b => {
+              const тут = дом && b.id === дом.id;
+              const занято = residentsOf(b).length, всего = habitatStep(b).cap;
+              const полно = !тут && !habitatHasRoom(b);
+              return `<button class="mm-skill ${тут ? "on" : ""} ${полно ? "shut" : ""}"
+                  data-home="${b.id}" ${тут || полно ? "disabled" : ""}>
+                <span class="mm-sk-ic"><img src="${ASSET_SRC[ELEMENTS[b.el].icon]}" alt=""></span>
+                <div><b>${esc(ELEMENTS[b.el].name)} · ${b.lvl} ур.</b>
+                  <small>${esc((HOMES[isleOf(b)] || {}).name || "остров")} · ${занято}/${всего}</small></div>
+                <span class="mm-sk-lv">${тут ? "тут" : полно ? "полно" : "поселить"}</span>
+              </button>`;
+            }).join("");
+            return `<div class="mc-sk-head">Логово
+              <b>${esc(подпись)}</b>
+              ${годные.length ? `<button class="mc-more" data-homes>${homesOpen ? "свернуть" : "выбрать"}</button>` : ""}
+            </div>
+            <div class="mc-all" ${homesOpen && годные.length ? "" : "hidden"}>
+              <div class="mc-hint">Нажми на логово, чтобы переселить чудище. Годятся только логова его стихии, где есть место.</div>
+              ${строки}
+            </div>
+            ${годные.length ? "" : `<div class="mc-hint">Логова нужной стихии ещё нет — построй его в магазине.</div>`}`;
+          })() : ""}
+
           ${m ? `<button class="b hot big" id="monsterFeed">Кормить · ${feedCost(m)}
             <img class="ic2" src="${ASSET_SRC.food}" alt="апельсины"></button>` : ""}
           ${cost != null ? `<button class="b gold big" id="monsterBuy">Купить яйцо · ${fmt(cost)}</button>` : ""}
@@ -10145,6 +10205,22 @@ function initModals() {
       skillsOpen = !skillsOpen;
       showMonster({ m, id, sp, cost });
     };
+
+    const homesBtn = карточка.querySelector("[data-homes]");
+    if (homesBtn) homesBtn.onclick = () => {
+      homesOpen = !homesOpen;
+      showMonster({ m, id, sp, cost });
+    };
+
+    карточка.querySelectorAll("[data-home]:not([disabled])").forEach(btn => {
+      btn.onclick = () => {
+        const err = moveMonsterHome(m, +btn.dataset.home);
+        if (err) return toast(err, "bad");
+        toast(`${m.name} переехал в новое логово`, "good");
+        showMonster({ m, id, sp, cost });
+        bus.emit("ui:sheet");
+      };
+    });
 
     const buy = $("#monsterBuy");
     if (buy) buy.onclick = () => { closeModal(); bus.emit("shop:buySpecies", { id, sp: species, cost }) };
