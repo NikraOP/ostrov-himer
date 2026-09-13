@@ -2677,6 +2677,7 @@ html,body,#app{touch-action:pan-x pan-y}
     <button class="b sm dock-b" id="isleBtn"><i>🏝️</i><span>Острова</span><small>твои земли</small></button>
     <button class="b sm" id="helpBtn">Как играть</button>
     <div style="flex:1"></div>
+    <button class="b sm go" id="placeBuild" style="display:none">Разместить</button>
     <button class="b sm hot" id="cancelBuild" style="display:none">Отмена стройки</button>
   </div>
 
@@ -3566,8 +3567,9 @@ function clampCam() {
  *   onHover(x,y) — движение курсора
  *   onDrag(x,y)  — протяжка; если вернёт true, камера не едет
  *                  (так постройка в руках тянется пальцем, а остров стоит)
+ *   onRelease()  — палец/курсор отпущен или снят с экрана
  */
-function bindInput({ onTap, onHover, onDrag }) {
+function bindInput({ onTap, onHover, onDrag, onRelease }) {
   let drag = null, moved = 0, pinch = null;
   const pointers = new Map();
 
@@ -3606,9 +3608,10 @@ function bindInput({ onTap, onHover, onDrag }) {
     cv.classList.remove("grab");
     if (drag && moved < 8) onTap?.(e.clientX, e.clientY);
     drag = null;
+    onRelease?.();
   });
 
-  cv.addEventListener("pointercancel", e => { pointers.delete(e.pointerId); drag = null; pinch = null });
+  cv.addEventListener("pointercancel", e => { pointers.delete(e.pointerId); drag = null; pinch = null; onRelease?.() });
   cv.addEventListener("wheel", e => {
     e.preventDefault();
     setZoom(cam.z * (e.deltaY < 0 ? 1.12 : 0.89), e.clientX, e.clientY);
@@ -9668,6 +9671,7 @@ function startMoving(b) {
   $("#cancelBuild").textContent = "Отмена переноса";
   $("#cancelBuild").style.display = "";
   cv.classList.add("build");
+  updatePlaceBtn();
   bus.emit("sheet:close");
   toast("Перенеси на свободное место");
 }
@@ -9680,14 +9684,21 @@ function startBuild(item) {
   $("#cancelBuild").textContent = "Отмена стройки";
   $("#cancelBuild").style.display = "";
   cv.classList.add("build");
+  updatePlaceBtn();
   bus.emit("sheet:close");
   toast("Поставь здание на свободное место");
 }
 function endBuild() {
   S.ghost = null;
+  ghostPointer = null;
   $("#cancelBuild").style.display = "none";
+  $("#placeBuild").style.display = "none";
   cv.classList.remove("build");
 }
+
+/** Последняя точка пальца/курсора, пока в руках здание — нужна кнопке
+    «Разместить» и автопрокрутке края экрана (см. updateGhostAutopan). */
+let ghostPointer = null;
 
 /** Призрак едет за курсором, прилипая к клеткам. */
 function moveGhost(x, y) {
@@ -9697,11 +9708,40 @@ function moveGhost(x, y) {
   const w = screenToWorld(x, y), g = toGrid(w.x, w.y), s = BUILDINGS[S.ghost.type].size;
   S.ghost.i = Math.floor(g.i - s / 2 + 0.5);
   S.ghost.j = Math.floor(g.j - s / 2 + 0.5);
+  updatePlaceBtn();
+}
+
+/** Кнопка «Разместить» видна, только пока здание стоит на свободном месте:
+    так на телефоне не нужно попадать пальцем ровно в холст ещё раз после
+    протяжки — зовёт её же функцию placeGhost. */
+function updatePlaceBtn() {
+  const btn = $("#placeBuild");
+  if (!btn) return;
+  const g = S.ghost;
+  btn.style.display = (g && !occupied(g.i, g.j, BUILDINGS[g.type].size, g.moving)) ? "" : "none";
+}
+
+/** Пока здание в руках у самого края экрана — сама камера едет туда: раньше
+    дотянуться до места за кадром можно было только отдалением щипком. */
+function updateGhostAutopan() {
+  if (!S.ghost || !ghostPointer) return;
+  const margin = 64, speed = 640;
+  const edge = (v, max) => v < margin ? (margin - v) / margin
+    : v > max - margin ? -(margin - (max - v)) / margin
+    : 0;
+  const ex = edge(ghostPointer.x, view.W), ey = edge(ghostPointer.y, view.H);
+  if (!ex && !ey) return;
+  touched = true;
+  cam.x += ex * speed * clock.dt;
+  cam.y += ey * speed * clock.dt;
+  clampCam();
+  moveGhost(ghostPointer.x, ghostPointer.y);
 }
 
 /** Поставить здание на выбранное место. */
 function placeGhost() {
   const g = S.ghost, s = BUILDINGS[g.type].size;
+  if (!plotOfCell(g.i, g.j)) return endBuild();   // мимо всех островов — как кнопка отмены
   if (occupied(g.i, g.j, s, g.moving)) return toast("Здесь занято", "bad");
 
   if (g.moving) {                                  // перенос: платить не надо
@@ -9737,6 +9777,7 @@ function initShop() {
   $("#tabBuild").onclick = () => { tab = "build"; renderShop() };
   $("#tabMons").onclick = () => { tab = "mons"; renderShop() };
   $("#cancelBuild").onclick = endBuild;
+  $("#placeBuild").onclick = () => { if (S.ghost) placeGhost() };
   // подсказка «что делать дальше» умеет открывать лавку сама
   bus.on("shop:open", () => {
     $("#shop").classList.add("on");
@@ -14014,6 +14055,7 @@ function frame(ts) {
   try {
     updateEconomy();
     updateJobs();
+    updateGhostAutopan();
     drawSky();
     if (S.battle) drawBattleScene();
     else { updateMonsters(); drawWorld() }
@@ -14081,9 +14123,13 @@ async function boot() {
   }
   bindInput({
     onTap,
-    onHover: (x, y) => { if (S.ghost) moveGhost(x, y) },
-    // здание в руках едет за пальцем, остров при этом стоит на месте
-    onDrag: (x, y) => { if (!S.ghost) return false; moveGhost(x, y); return true }
+    onHover: (x, y) => { if (S.ghost) { ghostPointer = { x, y }; moveGhost(x, y) } },
+    // здание в руках едет за пальцем, остров при этом стоит на месте;
+    // к краю экрана камера сама подъезжает — updateGhostAutopan() в frame()
+    onDrag: (x, y) => { if (!S.ghost) return false; ghostPointer = { x, y }; moveGhost(x, y); return true },
+    // палец отпущен — автопрокрутка должна остановиться, а не продолжать
+    // ехать к краю экрана в точку, где он был в последний раз
+    onRelease: () => { ghostPointer = null }
   });
 
   await assetsReady();      // ждём картинку острова, чтобы камера села точно
