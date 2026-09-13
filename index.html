@@ -12834,6 +12834,30 @@ function renderQuestWindow() {
     renderQuestBadge();
   });
 }
+/* Отдельное здание-экран для Небесного каравана. Поручения остаются источником ящиков,
+   но сам рейс, охрана и улучшение теперь живут в самостоятельном понятном интерфейсе. */
+let caravanRoot=null;
+const caravanOpen=()=>!!(caravanRoot&&caravanRoot.classList.contains("on"));
+function caravanStageArt(level){return ASSET_SRC["caravan"+level]||""}
+function buildCaravanDom(){
+  caravanRoot=document.createElement("section"); caravanRoot.id="caravan";
+  caravanRoot.innerHTML=`<div class="caravan-shell"><header class="caravan-head"><div><small>парящая гавань над Островом Химер</small><h2>Небесный караван</h2></div><button class="b sm" id="caravanClose">Закрыть</button></header><div class="caravan-tabs"></div><main class="caravan-content"></main></div>`;
+  const st=document.createElement("style"); st.textContent=`
+#caravan{position:fixed;inset:0;z-index:72;display:none;background:radial-gradient(circle at 50% 0,#285e7c 0,#12344b 42%,#071722 100%);overflow:auto;color:#fff}#caravan.on{display:block}.caravan-shell{max-width:1160px;margin:auto;min-height:100%;padding:calc(20px + env(safe-area-inset-top)) clamp(16px,4vw,56px) calc(110px + env(safe-area-inset-bottom))}.caravan-head{display:flex;justify-content:space-between;align-items:center;gap:18px;border-bottom:1px solid rgba(155,224,255,.36);padding:0 0 18px}.caravan-head h2{margin:0;font:900 clamp(24px,4vw,42px) Unbounded,sans-serif;letter-spacing:-.05em}.caravan-head small{color:#8bcee8;font:800 12px Nunito,sans-serif;text-transform:uppercase}.caravan-tabs{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:10px;margin:20px 0}.caravan-tab{border:1px solid #4d98bb;border-radius:14px;padding:10px;background:#163a55;color:#dff8ff;font:900 12px Nunito,sans-serif}.caravan-tab.on{background:linear-gradient(#ffd977,#e9982a);color:#3a2513;border-color:#fff0b0}.caravan-tab.lock{opacity:.52}.caravan-hero{display:grid;grid-template-columns:minmax(230px,.82fr) minmax(0,1.25fr);gap:26px;align-items:center;background:linear-gradient(135deg,#113d58,#071c2c);border:1px solid #4a91b4;border-radius:26px;padding:clamp(16px,3vw,30px);box-shadow:0 20px 45px #0008}.caravan-art{width:100%;max-height:355px;object-fit:contain;filter:drop-shadow(0 18px 18px #0008)}.caravan-copy h3{font:900 clamp(22px,3vw,34px) Unbounded,sans-serif;margin:0 0 8px}.caravan-copy p{color:#b9d9e7;line-height:1.5}.caravan-status{padding:11px 14px;border:1px solid #62e0c7;background:#123f4d;border-radius:12px;margin:12px 0;font-weight:900}.caravan-routes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}.caravan-route{padding:13px;border-radius:15px;background:linear-gradient(145deg,#1c5471,#123449);border:1px solid #66b6d7;text-align:left;color:#fff}.caravan-route b,.caravan-route small{display:block}.caravan-route small{color:#b9d9e7;margin-top:5px;line-height:1.4}.caravan-guards{margin:14px 0;padding:12px;border:1px solid #4e94a0;border-radius:14px;background:#0c2b3a}.caravan-guards small{display:block;color:#a9d3d7;margin-top:3px}.caravan-guard-list{display:flex;gap:7px;overflow:auto;padding-top:9px}.caravan-guard{flex:0 0 auto;min-width:105px;padding:8px;border-radius:9px;border:1px solid #49788a;background:#1a4658;color:#dff7f5;text-align:left}.caravan-guard.on{background:#2c876d;border-color:#b1e7a8}.caravan-guard span,.caravan-guard em{display:block;font-size:11px;font-style:normal}.caravan-guard em{color:#ffd974;margin-top:2px}.caravan-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:15px}.caravan-actions .b{flex:1;min-width:190px}@media(max-width:700px){.caravan-tabs{display:flex;overflow-x:auto}.caravan-tab{min-width:116px}.caravan-hero{grid-template-columns:1fr}.caravan-art{max-height:230px}.caravan-routes{grid-template-columns:1fr}.caravan-head h2{font-size:25px}}
+`; document.head.append(st); $("#app").append(caravanRoot);
+  caravanRoot.querySelector("#caravanClose").onclick=closeCaravan;
+  caravanRoot.querySelector(".caravan-tabs").onclick=e=>{const b=e.target.closest("[data-clvl]");if(b){caravanRoot.dataset.level=b.dataset.clvl;renderCaravan()}};
+  caravanRoot.querySelector(".caravan-content").onclick=e=>{const g=e.target.closest("[data-cguard]");if(g){toggleAirshipGuard(+g.dataset.cguard);renderCaravan();return}if(e.target.closest("[data-cup]")){upgradeAirship();renderCaravan();return}const r=e.target.closest("[data-croute]");if(r){const launched=launchAirship(r.dataset.croute);if(launched){toast(`Дирижабль отправлен в «${launched.name}».`,"good");renderCaravan()}return}if(e.target.closest("[data-cclaim]")){const cargo=claimAirship();if(cargo){toast(cargo.success?`Груз получен: +${cargo.route.gold} золота, +${cargo.route.food} еды и ${cargo.route.crystals} кристалла.`:"Поставку перехватили: охрана вернулась, но груз потерян.",cargo.success?"good":"bad");renderCaravan();renderQuestBadge()}return}if(e.target.closest("[data-corders]")){closeCaravan();openQuests()}};
+}
+function renderCaravan(){
+ if(!caravanRoot)return; const a=ensureAirship(),rank=airshipRank(),selected=clamp(+(caravanRoot.dataset.level||rank),1,4),next=AIRSHIP_UPGRADES[rank+1],route=AIRSHIP_ROUTES.find(x=>x.id===a.route),guards=airshipGuards(),pool=S.mons.filter(monsterAvailable).sort((x,y)=>powerOf(y)-powerOf(x)).slice(0,8),boxes=[0,1,2].map(i=>`<i class="air-box ${i<a.loaded?"full":""}">${i<a.loaded?"📦":"＋"}</i>`).join("");
+ caravanRoot.querySelector(".caravan-tabs").innerHTML=[1,2,3,4].map(n=>`<button class="caravan-tab ${n===selected?"on":""} ${n>rank?"lock":""}" data-clvl="${n}">${n>rank?"🔒 ":""}Ур. ${n}<br><small>${n===1?"первые рейсы":n===2?"дальние грузы":n===3?"редкие товары":"звёздный путь"}</small></button>`).join("");
+ let status=""; if(a.readyAt&&a.readyAt>Date.now())status=`<div class="caravan-status">🛩️ Дирижабль в пути к «${esc(route&&route.name||"маршруту") }» · вернётся через ${tleft(a.readyAt-Date.now())}</div>`; else if(a.readyAt)status=`<div class="caravan-status">📦 Дирижабль вернулся. Груз ждёт в трюме.</div><button class="b gold" data-cclaim>Забрать груз</button>`; else if(a.claimed)status=`<div class="caravan-status">✓ Рейс на сегодня завершён. Новые заказы прилетят завтра.</div>`; else if(a.loaded<3)status=`<div class="caravan-status">${boxes} В трюме ${a.loaded}/3 ящика. Выполняй поручения, чтобы подготовить поставку.</div><button class="b gold" data-corders>Открыть поручения</button>`; else {const gp=`<div class="caravan-guards"><b>Охрана груза · ${guards.length}/3</b><small>Выбери от 1 до 3 свободных монстров. Их сила повышает шанс безопасной доставки.</small><div class="caravan-guard-list">${pool.map(m=>`<button class="caravan-guard ${a.guards.includes(m.id)?"on":""}" data-cguard="${m.id}"><span>${esc(m.name)}</span><em>⚔ ${fmt(powerOf(m))}</em></button>`).join("")}</div></div>`;const routes=AIRSHIP_ROUTES.filter(r=>r.need<=rank).map(r=>`<button class="caravan-route" data-croute="${r.id}"><b>${r.icon} ${esc(r.name)}</b><small>${r.mins} мин · ${guards.length?airshipChance(r):"—"}% защита<br>+${r.gold} 🪙 · +${r.food} 🍊 · ${r.crystals} 💎</small></button>`).join("");status=`<div class="caravan-status">${boxes} Груз готов. Назначь охрану и выбери маршрут.</div>${gp}<div class="caravan-routes">${routes}</div>`}
+ const up=next?`<button class="b" data-cup>Улучшить караван до ур. ${rank+1} · ${fmt(next.cost)} 🪙</button>`:`<div class="caravan-status">✦ Караван достиг максимального, 4 уровня.</div>`;
+ caravanRoot.querySelector(".caravan-content").innerHTML=`<article class="caravan-hero"><img class="caravan-art" src="${caravanStageArt(selected)}" alt="Небесный караван, уровень ${selected}"><div class="caravan-copy"><h3>Небесный караван</h3><p>Отправляй грузы за редкими ресурсами. Караван улетает отдельным дирижаблем, а площадка остаётся на острове.</p>${status}<div class="caravan-actions">${up}<button class="b sm" data-corders>Поручения</button></div></div></article>`;
+}
+function openCaravan(){if(!caravanRoot)buildCaravanDom();caravanRoot.dataset.level=airshipRank();renderCaravan();caravanRoot.classList.add("on");bus.emit("sheet:close")}
+function closeCaravan(){if(caravanRoot)caravanRoot.classList.remove("on")}
 function openQuests() {
   if (!questRoot) buildQuestDom();
   renderQuestWindow();
@@ -13866,7 +13890,7 @@ function onTap(x, y) {
 
   const portalPoint = screenToWorld(x, y);
   if (dungeonPortalHit(portalPoint.x, portalPoint.y)) return openDungeon();
-  if (caravanPortalHit(portalPoint.x, portalPoint.y)) return openQuests();
+  if (caravanPortalHit(portalPoint.x, portalPoint.y)) return openCaravan();
 
   const mon = monsterAt(x, y);
   if (mon) {
@@ -14013,3 +14037,4 @@ boot();
 </script>
 </body>
 </html>
+
