@@ -2163,7 +2163,7 @@ button.mm-skill:disabled{cursor:default}
 <style>
 <style>
 /* Станция поручений: один яркий маршрут вместо одинаковых синих кнопок. */
-.qt-guide{display:flex;gap:8px;align-items:flex-start;padding:10px 12px;border-radius:12px;background:rgba(81,174,158,.14);border:1px solid rgba(113,207,185,.35);font-size:11px;line-height:1.35}.qt-guide b{color:#c5f4df;white-space:nowrap}.qt-guide span{color:#d4ece8}.airship{padding:13px;border:2px solid #4a8794;border-radius:16px;background:linear-gradient(145deg,#153f50,#0e2d3e);color:#effcf7;box-shadow:var(--lift-sm)}.airship.ready{border-color:#e9bd5c}.airship p{margin:8px 0 0;color:#c6e3e6;font-size:11.5px;font-weight:700;line-height:1.4}.air-title{display:flex;align-items:center;gap:7px;font-family:var(--disp);font-size:14px}.air-title span{margin-left:auto;display:flex;gap:3px}.air-box{display:grid;place-items:center;width:25px;height:25px;border-radius:7px;background:#0b2634;border:1px dashed #7297a0;font-style:normal;font-size:13px}.air-box.full{background:#2f8b70;border-style:solid;border-color:#a3e4b2}.air-routes{display:grid;gap:6px;margin-top:10px}.air-route{display:grid;grid-template-columns:1fr auto;gap:2px;text-align:left;padding:9px 10px;border-radius:10px;color:#eafff8;background:#24596a;border:1px solid #73aeb3}.air-route b{font:800 12px var(--disp)}.air-route small{grid-column:1/2;color:#bde2dc;font-size:10px}.air-route:hover{background:#33778a}.airship .b{margin-top:9px;width:100%}@media(max-width:560px){.qt-guide{font-size:10px}.air-title{font-size:12px}.air-route{padding:8px}}
+.qt-guide{display:flex;gap:8px;align-items:flex-start;padding:10px 12px;border-radius:12px;background:rgba(81,174,158,.14);border:1px solid rgba(113,207,185,.35);font-size:11px;line-height:1.35}.qt-guide b{color:#c5f4df;white-space:nowrap}.qt-guide span{color:#d4ece8}.airship{padding:13px;border:2px solid #4a8794;border-radius:16px;background:linear-gradient(145deg,#153f50,#0e2d3e);color:#effcf7;box-shadow:var(--lift-sm)}.airship.ready{border-color:#e9bd5c}.airship p{margin:8px 0 0;color:#c6e3e6;font-size:11.5px;font-weight:700;line-height:1.4}.air-title{display:flex;align-items:center;gap:7px;font-family:var(--disp);font-size:14px}.air-title span{margin-left:auto;display:flex;gap:3px}.air-box{display:grid;place-items:center;width:25px;height:25px;border-radius:7px;background:#0b2634;border:1px dashed #7297a0;font-style:normal;font-size:13px}.air-box.full{background:#2f8b70;border-style:solid;border-color:#a3e4b2}.air-routes{display:grid;gap:6px;margin-top:10px}.air-route{display:grid;grid-template-columns:1fr auto;gap:2px;text-align:left;padding:9px 10px;border-radius:10px;color:#eafff8;background:#24596a;border:1px solid #73aeb3}.air-route b{font:800 12px var(--disp)}.air-route small{grid-column:1/2;color:#bde2dc;font-size:10px}.air-route:hover{background:#33778a}.airship .b{margin-top:9px;width:100%}.air-up{width:100%;margin-top:8px}.air-max{text-align:center;padding:9px;border-radius:10px;background:#213c56;color:#b9e7ef;font-size:11px;font-weight:900}@media(max-width:560px){.qt-guide{font-size:10px}.air-title{font-size:12px}.air-route{padding:8px}}
 </style>
 /* ===== css/grow.css ===== */
 /* Три карточки из src/ui/grow.js: что посадить (сетка сортов), что растёт
@@ -2824,6 +2824,8 @@ const ASSET_SRC = {
   dungeon3: "assets/ПодземельеУровень3.png",
   dungeon4: "assets/ПодземельеУровень4.png",
   dungeon5: "assets/ПодземельеУровень5.png",
+  caravan1: "assets/НебесныйКараванУровень1.png", caravan2: "assets/НебесныйКараванУровень2.png", caravan3: "assets/НебесныйКараванУровень3.png", caravan4: "assets/НебесныйКараванУровень4.png",
+  caravanShip: "assets/ДирижабльКаравана.png",
   aurelionEgg: "assets/МонстрАурелионЭтапЯйцо.png",
   aurelion1: "assets/МонстрАурелионЭтап1.png",
   aurelion2: "assets/МонстрАурелионЭтап2.png",
@@ -3148,6 +3150,12 @@ function drawDungeonPortal(c) {
   drawSprite(c, key, p.x, p.y, DUNGEON_PORTAL.width);
   return { key, x: p.x, y: p.y, width: DUNGEON_PORTAL.width };
 }
+/* Небесный караван — второй парящий объект. Стационарная площадка и
+   дирижабль разделены: при поставке корабль действительно уходит в небо. */
+const CARAVAN_PORTAL={width:290,gap:44};
+function caravanPortalPoint(){const r=plotRect(HOMES[FIRST_HOME]);return{x:r.x+r.w*.80,y:r.y-CARAVAN_PORTAL.gap}}
+function drawCaravanPortal(c){const p=caravanPortalPoint(),a=ensureAirship();drawSprite(c,airshipVisualKey(),p.x,p.y,CARAVAN_PORTAL.width);const flying=a.readyAt&&!a.claimed&&a.readyAt>Date.now();const drift=flying?Math.min(520,(Date.now()%7000)/7000*650):0;drawSprite(c,"caravanShip",p.x+(flying?drift:0),p.y-(flying?220:108),155,{lift:Math.sin(clock.now/700)*4});}
+function caravanPortalHit(x,y){const p=caravanPortalPoint();return spriteHit(airshipVisualKey(),p.x,p.y,CARAVAN_PORTAL.width,x,y)}
 function dungeonPortalHit(x, y) {
   const p = dungeonPortalPoint(), key = dungeonVisualKey();
   return spriteHit(key, p.x, p.y, DUNGEON_PORTAL.width, x, y);
@@ -6122,6 +6130,7 @@ function drawIsland() {
   }
 
   drawDungeonPortal(ctx);
+  drawCaravanPortal(ctx);
 
   if (!S.ghost) return;
   for (const p of allPlots()) {
@@ -6997,8 +7006,10 @@ function claimQuest(id) {
 
 
 /* ===== src/game/airship.js ===== */
-const AIRSHIP_ROUTES = [{id:"meadow",icon:"🌿",name:"Зелёная гавань",mins:90,gold:220,food:45,crystals:1},{id:"ruins",icon:"🏛️",name:"Кристальные руины",mins:150,gold:380,food:70,crystals:2},{id:"storm",icon:"⚡",name:"Грозовой разлом",mins:210,gold:620,food:100,crystals:3}];
-function ensureAirship(){ const date=(S.daily&&S.daily.date)||dayKey(); if(!S.airship||S.airship.date!==date) S.airship={date,loaded:0,route:null,readyAt:0,claimed:false}; return S.airship }
+const AIRSHIP_ROUTES = [{id:"meadow",need:1,icon:"🌿",name:"Зелёная гавань",mins:90,gold:220,food:45,crystals:1},{id:"ruins",need:2,icon:"🏛️",name:"Кристальные руины",mins:150,gold:380,food:70,crystals:2},{id:"storm",need:3,icon:"⚡",name:"Грозовой разлом",mins:210,gold:620,food:100,crystals:3},{id:"stars",need:4,icon:"✨",name:"Звёздный путь",mins:300,gold:1000,food:160,crystals:5}];
+const AIRSHIP_UPGRADES=[null,{need:1,cost:0},{need:5,cost:12000},{need:12,cost:60000},{need:20,cost:220000}];
+function ensureAirship(){ const date=(S.daily&&S.daily.date)||dayKey(); if(!S.airship||S.airship.date!==date) S.airship={date,loaded:0,route:null,readyAt:0,claimed:false,lvl:(S.airship&&S.airship.lvl)||1}; S.airship.lvl=clamp(+S.airship.lvl||1,1,4); return S.airship }
+function airshipRank(){return ensureAirship().lvl} function airshipVisualKey(){return "caravan"+airshipRank()} function upgradeAirship(){const a=ensureAirship(),n=airshipRank()+1,u=AIRSHIP_UPGRADES[n];if(!u)return toast("Небесный караван уже 4 уровня", "good");if(profileLevel()<u.need)return toast(`Нужен ${u.need} уровень хозяина острова`,"bad");if(S.gold<u.cost)return toast("Не хватает золота", "bad");S.gold-=u.cost;a.lvl=n;persist();bus.emit("ui:top");toast(`Небесный караван улучшен до ${n} уровня!`,"good");if(questsOpen())renderQuestWindow()}
 function launchAirship(id){ const a=ensureAirship(),r=AIRSHIP_ROUTES.find(x=>x.id===id); if(!r||a.loaded<3||a.readyAt||a.claimed)return null; a.route=id;a.readyAt=Date.now()+r.mins*6e4;persist();return r }
 function claimAirship(){const a=ensureAirship(),r=AIRSHIP_ROUTES.find(x=>x.id===a.route);if(!r||!a.readyAt||a.readyAt>Date.now()||a.claimed)return null;S.gold+=r.gold;S.food+=r.food;S.crystals+=r.crystals;a.claimed=true;persist();bus.emit("ui:top");return r}
 
@@ -12785,18 +12796,21 @@ function renderQuestWindow() {
 
   const a = ensureAirship();
   const route = AIRSHIP_ROUTES.find(x => x.id === a.route);
+  const caravanLevel = airshipRank(), nextCaravan = AIRSHIP_UPGRADES[caravanLevel + 1];
   const boxes = [0,1,2].map(i => `<i class="air-box ${i < a.loaded ? "full" : ""}">${i < a.loaded ? "📦" : "＋"}</i>`).join("");
   const air = a.claimed
-    ? `<section class="airship"><div class="air-title">🛩️ <b>Небесный караван</b><span>${boxes}</span></div><p>Рейс завершён. Завтра прилетят новые поручения.</p></section>`
+    ? `<section class="airship"><div class="air-title">🛩️ <b>Небесный караван · ур. ${caravanLevel}/4</b><span>${boxes}</span></div><p>Рейс завершён. Завтра прилетят новые поручения.</p></section>`
     : a.readyAt && a.readyAt > Date.now()
       ? `<section class="airship"><div class="air-title">🛩️ <b>Дирижабль летит в «${route.name}»</b><span>${boxes}</span></div><p>Вернётся через ${tleft(a.readyAt-Date.now())}. Загляни позже за грузом.</p></section>`
       : a.readyAt
         ? `<section class="airship ready"><div class="air-title">🛩️ <b>Дирижабль вернулся!</b><span>${boxes}</span></div><p>Груз из «${route.name}» ждёт в трюме.</p><button class="b gold" data-air-claim>Забрать груз</button></section>`
         : a.loaded < 3
-          ? `<section class="airship"><div class="air-title">🛩️ <b>Небесный караван</b><span>${boxes}</span></div><p>Закрой и забери награду за 3 поручения — каждый заказ загрузит один ящик.</p></section>`
-          : `<section class="airship ready"><div class="air-title">🛩️ <b>Груз готов — выбери маршрут</b><span>${boxes}</span></div><p>Дальше путь — ценнее награда.</p><div class="air-routes">${AIRSHIP_ROUTES.map(r=>`<button class="air-route" data-route="${r.id}"><b>${r.icon} ${r.name}</b><small>${r.mins} мин · +${r.gold} 🪙 · ${r.crystals} 💎</small></button>`).join("")}</div></section>`;
+          ? `<section class="airship"><div class="air-title">🛩️ <b>Небесный караван · ур. ${caravanLevel}/4</b><span>${boxes}</span></div><p>Закрой и забери награду за 3 поручения — каждый заказ загрузит один ящик.</p></section>`
+          : `<section class="airship ready"><div class="air-title">🛩️ <b>Груз готов — выбери маршрут</b><span>${boxes}</span></div><p>Дальше путь — ценнее награда.</p><div class="air-routes">${AIRSHIP_ROUTES.filter(r=>r.need<=caravanLevel).map(r=>`<button class="air-route" data-route="${r.id}"><b>${r.icon} ${r.name}</b><small>${r.mins} мин · +${r.gold} 🪙 · ${r.crystals} 💎</small></button>`).join("")}</div></section>`;
+  const upgradeAir = nextCaravan ? `<button class="b sm air-up" data-air-up>Улучшить караван · ур. ${caravanLevel + 1} · ${fmt(nextCaravan.cost)} 🪙</button>` : `<div class="air-max">✦ Караван достиг 4 уровня</div>`;
   $("#qtBody").innerHTML = `${hero}<div class="qt-guide"><b>Как работает караван</b><span>Поручение → награда → ящик → маршрут → редкий груз.</span></div>${bonusCard}<div class="qt-list">${rows}</div>${air}`;
 
+  const up = $("#quests [data-air-up]"); if(up) up.onclick = () => upgradeAirship();
   $$("#quests [data-go]").forEach(btn => btn.onclick = () => goOrder(btn.dataset.go));
   $$("#quests [data-route]").forEach(btn => btn.onclick = () => { const r=launchAirship(btn.dataset.route); if(r){ toast(`Дирижабль отправлен в «${r.name}». Вернись через ${r.mins} мин.`, "good"); renderQuestWindow(); } });
   const cargo = $("#quests [data-air-claim]"); if(cargo) cargo.onclick = () => { const r=claimAirship(); if(r){ toast(`Груз получен: +${r.gold} золота, +${r.food} еды и ${r.crystals} кристалла.`, "good"); renderQuestWindow(); renderQuestBadge(); } };
@@ -13847,6 +13861,7 @@ function onTap(x, y) {
 
   const portalPoint = screenToWorld(x, y);
   if (dungeonPortalHit(portalPoint.x, portalPoint.y)) return openDungeon();
+  if (caravanPortalHit(portalPoint.x, portalPoint.y)) return openQuests();
 
   const mon = monsterAt(x, y);
   if (mon) {
