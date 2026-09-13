@@ -12796,7 +12796,7 @@ function renderQuestWindow() {
         <b>${esc(t.name)}</b>
         <small>${esc(t.desc)}</small>
         <div class="qt-bar" aria-label="Прогресс ${q.have} из ${q.need}"><i style="width:${pct}%"></i></div>
-        <span class="qt-reward">Награда: +${fmt(reward.gold)} 🪙 · +${fmt(reward.food)} 🍊 · ${q.have}/${q.need}</span>
+        <span class="qt-reward">Награда: +${fmt(reward.gold)} ${gold} · +${fmt(reward.food)} ${food} · ${q.have}/${q.need}</span>
       </div>
       ${q.claimed
         ? `<span class="qt-state">получено</span>`
@@ -12809,7 +12809,7 @@ function renderQuestWindow() {
     : `<div class="qt-hero"><span class="qt-kicker">Следующий шаг</span><strong>${next ? esc(next.t.name) : "Забери награду"}</strong><p>${next ? esc(next.t.desc) : "Осталось забрать готовую награду."}</p></div>`;
   const bonusCard = allClaimed
     ? `<div class="qt-hint">Все награды уже у тебя. Завтра откроется новый набор.</div>`
-    : `<div class="qt-bonus"><span class="qt-bonus-icon">🎁</span><span><b>Бонус за все поручения</b>+${fmt(bonus.gold)} 🪙 · +${fmt(bonus.food)} 🍊 · ${bonus.crystals} 💎</span></div>`;
+    : `<div class="qt-bonus"><span class="qt-bonus-icon">🎁</span><span><b>Бонус за все поручения</b>+${fmt(bonus.gold)} ${gold} · +${fmt(bonus.food)} ${food} · ${bonus.crystals} ${crystal}</span></div>`;
 
   $("#qtBody").innerHTML = `${hero}<div class="qt-guide"><b>Ежедневные поручения</b><span>Закрывай маленькие цели и забирай ресурсы для развития острова.</span></div>${bonusCard}<div class="qt-list">${rows}</div><div class="qt-hint">☁️ Поставки, охрана и редкие награды — в отдельном здании «Небесный караван».</div>`;
   $$("#quests [data-go]").forEach(btn => btn.onclick = () => goOrder(btn.dataset.go));
@@ -12849,7 +12849,7 @@ function renderCaravan(){
  const a=ensureAirship(),rank=airshipRank(),selectedLevel=clamp(+(caravanRoot.dataset.level||rank),1,4),next=AIRSHIP_UPGRADES[rank+1],route=airshipContract(a.route),guards=airshipGuards(),pool=S.mons.filter(monsterAvailable).sort((x,y)=>powerOf(y)-powerOf(x)).slice(0,8);
  const available=AIRSHIP_CONTRACTS.filter(c=>c.need===selectedLevel),selectedId=caravanRoot.dataset.contract,selected=airshipContract(available.some(c=>c.id===selectedId)?selectedId:available[0].id);caravanRoot.dataset.contract=selected.id;
  caravanRoot.querySelector(".caravan-tabs").innerHTML=[1,2,3,4].map(n=>`<button class="caravan-tab ${n===selectedLevel?"on":""} ${n>rank?"lock":""}" data-clvl="${n}">${n>rank?"🔒 ":""}Ур. ${n}<br><small>${n===1?"первые рейсы":n===2?"дальние грузы":n===3?"редкие товары":"звёздный путь"}</small></button>`).join("");
- const cards=available.map(base=>{const c=airshipContract(base.id),done=contractReady(c),progress=c.tasks.reduce((n,t)=>n+Math.min(t.have,t.need),0),total=c.tasks.reduce((n,t)=>n+t.need,0);return `<button class="caravan-route ${c.id===selected.id?"on":""}" data-ccontract="${c.id}"><b>${c.icon} ${esc(c.name)}</b><small>${c.tier} · ${c.mins} мин<br>${progress}/${total} задач · +${c.gold} 🪙 · ${c.crystals} 💎 ${done?"· ✓ готово":""}</small></button>`}).join("");
+ const cards=available.map(base=>{const c=airshipContract(base.id),done=contractReady(c),progress=c.tasks.reduce((n,t)=>n+Math.min(t.have,t.need),0),total=c.tasks.reduce((n,t)=>n+t.need,0);return `<button class="caravan-route ${c.id===selected.id?"on":""}" data-ccontract="${c.id}"><b>${c.icon} ${esc(c.name)}</b><small>${c.tier} · ${c.mins} мин<br>${progress}/${total} задач · +${c.gold} ${gold} · ${c.crystals} ${crystal} ${done?"· ✓ готово":""}</small></button>`}).join("");
  const tasks=`<div class="caravan-guards"><b>${selected.icon} ${esc(selected.name)} · ${selected.tier}</b><small>Вариант контракта на сегодня. Завтра условия этого маршрута поменяются.</small><div class="contract-tasks">${selected.tasks.map(t=>`<span class="${t.have>=t.need?"done":""}">${t.have>=t.need?"✓":"○"} ${AIRSHIP_TASK_LABELS[t.kind]} · ${t.have}/${t.need}</span>`).join("")}</div></div>`;
  let status="";
  if(a.readyAt&&a.readyAt>Date.now())status=`<div class="caravan-status">🛩️ Дирижабль в пути к «${esc(route&&route.name||"маршруту") }» · вернётся через ${tleft(a.readyAt-Date.now())}</div>`;
@@ -12858,7 +12858,7 @@ function renderCaravan(){
  else if(selectedLevel>rank)status=`<div class="caravan-status">🔒 Улучши караван до ${selectedLevel} уровня, чтобы открыть эти поставки.</div>`;
  else if(!contractReady(selected))status=`<div class="caravan-status">Выполни условия выбранного контракта — затем назначь охрану и отправляй дирижабль.</div>${tasks}`;
  else {const gp=`<div class="caravan-guards"><b>Охрана груза · ${guards.length}/3</b><small>Выбери от 1 до 3 свободных монстров. Их сила повышает шанс безопасной доставки.</small><div class="caravan-guard-list">${pool.map(m=>`<button class="caravan-guard ${a.guards.includes(m.id)?"on":""}" data-cguard="${m.id}"><i class="caravan-guard-face" style="background-image:url(&quot;${monsterPortrait(m)}&quot;)"></i><b>${esc(m.name)}</b><em>⚔ ${fmt(powerOf(m))}</em></button>`).join("")}</div></div>`;status=`<div class="caravan-status">Контракт готов. Шанс успешной доставки: ${guards.length?airshipChance(selected):"—"}%.</div>${tasks}${gp}<button class="b gold" data-croute="${selected.id}">Отправить дирижабль · ${selected.mins} мин</button>`}
- const up=next?`<button class="b" data-cup>Улучшить караван до ур. ${rank+1} · ${fmt(next.cost)} 🪙</button>`:`<div class="caravan-status">✦ Караван достиг максимального, 4 уровня.</div>`;
+ const up=next?`<button class="b" data-cup>Улучшить караван до ур. ${rank+1} · ${fmt(next.cost)} ${gold}</button>`:`<div class="caravan-status">✦ Караван достиг максимального, 4 уровня.</div>`;
  caravanRoot.querySelector(".caravan-content").innerHTML=`<article class="caravan-hero"><img class="caravan-art" src="${caravanStageArt(selectedLevel)}" alt="Небесный караван, уровень ${selectedLevel}"><div class="caravan-copy"><h3>Небесный караван</h3><p>На каждом уровне доступны три разных поставки. У каждой — свои условия, риск и награды.</p><div class="caravan-routes">${cards}</div>${status}<div class="caravan-actions">${up}<button class="b sm" data-corders>Ежедневные поручения</button></div></div></article>`;
  /* Список вкладок и список охраны перерисовываются на каждый тап (выбор
     контракта, охранника, уровня) — без возврата прокрутки телефон каждый
