@@ -12251,7 +12251,9 @@ function initIsles() {
    узнаётся. Вулканий населяют обычные, Ледянец — редкие водяные и природные,
    Пескоград — эпические каменные, Грозовой кряж — эпические стаи, Багрец —
    легендарные, а с ними вершины: мифические Пироксис и Терракун и два
-   богоподобных босса.
+   богоподобных босса. Дальше карта идёт вверх по ступеням: Пепельный Зенит —
+   легендарная свита и мифические хозяева, а Лунный Разлом целиком мифический,
+   и оба его босса богоподобные.
 
    Уровни же подобраны машиной, и иначе не выходит: исход боя решает не
    столько уровень, сколько ступень редкости и характер вида — на глаз тут
@@ -12513,11 +12515,131 @@ const ISLANDS = [
       { stars: 20, gold: 60000, food: 5000, crystals: 20 },
       { stars: 30, gold: 120000, food: 9000, crystals: 32 }
     ]
+  },
+
+  /* ---------- шестой остров: Пепельный Зенит ----------
+     Здесь кончаются легендарные и начинаются мифические. Сопровождение ещё
+     легендарное и стоит выше уровнем, а редкость держит один зверь в отряде —
+     то же правило, что и на Багреце, только ступенью выше. Последний бой
+     острова — богоподобный Аурелион: сам он младше свиты, силу ему даёт
+     ступень. */
+  {
+    id: "zenit",
+    name: "Пепельный Зенит",
+    image: "",                                   // см. TEMP_ISLE_ART ниже
+    tint: "grayscale(.55) sepia(.3) brightness(.78) contrast(1.15)",
+    sky: ["#7A4A32", "#F2CFA6"],
+    nodes: [
+      { n: 1,  x: 0.20, y: 0.36, enemies: [{ species: "riks", level: 64 },
+                  { species: "toporn", level: 64 },
+                  { species: "mossar", level: 64 }] },
+      { n: 2,  x: 0.27, y: 0.26, enemies: [{ species: "fron", level: 66 },
+                  { species: "iskril", level: 66 },
+                  { species: "riftar", level: 66 }] },
+      { n: 3,  x: 0.35, y: 0.34, enemies: [{ species: "toporn", level: 66 },
+                  { species: "magmavor", level: 60 },
+                  { species: "riks", level: 66 }] },
+      { n: 4,  x: 0.33, y: 0.47, enemies: [{ species: "mossar", level: 68 },
+                  { species: "riftar", level: 68 },
+                  { species: "iskril", level: 68 }] },
+      { n: 5,  x: 0.44, y: 0.52, boss: true, reward: { gold: 45000, food: 3200 },
+        // хозяин пепла: мифический Магмавор, свита легендарная и выше уровнем
+        enemies: [{ species: "fron", level: 67 },
+                  { species: "magmavor", level: 62 },
+                  { species: "toporn", level: 67 }] },
+      { n: 6,  x: 0.50, y: 0.40, enemies: [{ species: "riks", level: 70 },
+                  { species: "iskril", level: 70 },
+                  { species: "mossar", level: 70 }] },
+      { n: 7,  x: 0.49, y: 0.27, enemies: [{ species: "riftar", level: 70 },
+                  { species: "geodrax", level: 64 },
+                  { species: "fron", level: 70 }] },
+      { n: 8,  x: 0.58, y: 0.24, enemies: [{ species: "toporn", level: 72 },
+                  { species: "mossar", level: 72 },
+                  { species: "riks", level: 72 }] },
+      { n: 9,  x: 0.66, y: 0.34, enemies: [{ species: "iskril", level: 73 },
+                  { species: "piroksis", level: 66 },
+                  { species: "riftar", level: 73 }] },
+      { n: 10, x: 0.76, y: 0.44, boss: true, reward: { gold: 90000, food: 6000 },
+        // первый богоподобный, который сам ведёт бой, а не стоит в углу карты
+        enemies: [{ species: "fron", level: 72 },
+                  { species: "aurelion", level: 64 },
+                  { species: "toporn", level: 72 }] }
+    ],
+    chests: [
+      { stars: 10, gold: 200000, food: 16000, crystals: 40 },
+      { stars: 20, gold: 400000, food: 30000, crystals: 55 },
+      { stars: 30, gold: 750000, food: 55000, crystals: 75 }
+    ]
+  },
+
+  /* ---------- седьмой остров: Лунный Разлом ----------
+     Край карты. Сопровождение целиком мифическое, а боссы богоподобные, и
+     последний из них — Ноктариум: тьма и вода, самый быстрый удар в игре.
+     Уровни держатся прежним правилом: чем выше ступень зверя, тем ниже его
+     уровень, иначе бой перестаёт быть боем. */
+  {
+    id: "razlom",
+    name: "Лунный Разлом",
+    image: "",                                   // см. TEMP_ISLE_ART ниже
+    tint: "hue-rotate(38deg) saturate(1.3) brightness(.72) contrast(1.08)",
+    sky: ["#241C4A", "#9B8AD6"],
+    nodes: [
+      { n: 1,  x: 0.19, y: 0.40, enemies: [{ species: "riks", level: 76 },
+                  { species: "verdantis", level: 70 },
+                  { species: "mossar", level: 76 }] },
+      { n: 2,  x: 0.25, y: 0.29, enemies: [{ species: "akvalira", level: 72 },
+                  { species: "orbitron", level: 72 },
+                  { species: "terrakun", level: 72 }] },
+      { n: 3,  x: 0.33, y: 0.24, enemies: [{ species: "magmavor", level: 74 },
+                  { species: "geodrax", level: 74 },
+                  { species: "piroksis", level: 74 }] },
+      { n: 4,  x: 0.36, y: 0.38, enemies: [{ species: "vesperon", level: 74 },
+                  { species: "akvalira", level: 74 },
+                  { species: "verdantis", level: 74 }] },
+      { n: 5,  x: 0.44, y: 0.50, boss: true, reward: { gold: 160000, food: 11000 },
+        // Солмарис в разломе: лечит свиту, поэтому свита стоит мифическая,
+        // но младше — иначе узел не берётся ничем
+        enemies: [{ species: "terrakun", level: 72 },
+                  { species: "solmaris", level: 66 },
+                  { species: "orbitron", level: 72 }] },
+      { n: 6,  x: 0.52, y: 0.42, enemies: [{ species: "geodrax", level: 78 },
+                  { species: "vesperon", level: 78 },
+                  { species: "piroksis", level: 78 }] },
+      { n: 7,  x: 0.55, y: 0.30, enemies: [{ species: "orbitron", level: 80 },
+                  { species: "magmavor", level: 80 },
+                  { species: "akvalira", level: 80 }] },
+      { n: 8,  x: 0.63, y: 0.26, enemies: [{ species: "verdantis", level: 82 },
+                  { species: "terrakun", level: 82 },
+                  { species: "vesperon", level: 82 }] },
+      { n: 9,  x: 0.68, y: 0.40, enemies: [{ species: "piroksis", level: 84 },
+                  { species: "geodrax", level: 84 },
+                  { species: "magmavor", level: 84 }] },
+      { n: 10, x: 0.78, y: 0.32, boss: true, reward: { gold: 320000, food: 20000 },
+        // конец странствий: богоподобный Ноктариум и мифическая свита
+        enemies: [{ species: "orbitron", level: 82 },
+                  { species: "noctarium", level: 74 },
+                  { species: "verdantis", level: 82 }] }
+    ],
+    chests: [
+      { stars: 10, gold: 1200000, food: 90000,  crystals: 90 },
+      { stars: 20, gold: 2400000, food: 160000, crystals: 120 },
+      { stars: 30, gold: 4500000, food: 280000, crystals: 160 }
+    ]
   }
 ];
 
 /** Остров по ключу. */
 const islandById = id => ISLANDS.find(i => i.id === id) || null;
+
+/* Пока своих картинок у двух последних островов нет, они берут чужие и
+   перекрашиваются фильтром tint: карта не должна ждать художника. Пришла своя
+   картинка — впиши её в image острова и убери у него tint, тогда эта строка
+   ничего не делает. */
+const TEMP_ISLE_ART = { zenit: "vulkan", razlom: "ledyanec" };
+for (const [id, from] of Object.entries(TEMP_ISLE_ART)) {
+  const isle = islandById(id), src = islandById(from);
+  if (isle && !isle.image && src) isle.image = src.image;
+}
 
 /**
  * Сквозной номер уровня: на втором острове точки продолжают счёт (11, 12…),
