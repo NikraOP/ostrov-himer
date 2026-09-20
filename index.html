@@ -2882,6 +2882,16 @@ const ASSET_SRC = {
   caravanShip: "assets/ДирижабльКаравана.png",
   islandZenit: "assets/ОстровПепельныйЗенит.png",
   islandRazlom: "assets/ОстровЛунныйРазлом.png",
+  mayakrutEgg: "assets/МонстрМаякрутЭтапЯйцо.png",
+  mayakrut1: "assets/МонстрМаякрутЭтап1.png", mayakrut2: "assets/МонстрМаякрутЭтап2.png", mayakrut3: "assets/МонстрМаякрутЭтап3.png",
+  zharomohEgg: "assets/МонстрЖаромохЭтапЯйцо.png",
+  zharomoh1: "assets/МонстрЖаромохЭтап1.png", zharomoh2: "assets/МонстрЖаромохЭтап2.png", zharomoh3: "assets/МонстрЖаромохЭтап3.png",
+  noktilyusEgg: "assets/МонстрНоктилюсЭтапЯйцо.png",
+  noktilyus1: "assets/МонстрНоктилюсЭтап1.png", noktilyus2: "assets/МонстрНоктилюсЭтап2.png", noktilyus3: "assets/МонстрНоктилюсЭтап3.png",
+  hronomehEgg: "assets/МонстрХрономехЭтапЯйцо.png",
+  hronomeh1: "assets/МонстрХрономехЭтап1.png", hronomeh2: "assets/МонстрХрономехЭтап2.png", hronomeh3: "assets/МонстрХрономехЭтап3.png",
+  rozognevEgg: "assets/МонстрРозогневЭтапЯйцо.png",
+  rozognev1: "assets/МонстрРозогневЭтап1.png", rozognev2: "assets/МонстрРозогневЭтап2.png", rozognev3: "assets/МонстрРозогневЭтап3.png",
   aurelionEgg: "assets/МонстрАурелионЭтапЯйцо.png",
   aurelion1: "assets/МонстрАурелионЭтап1.png",
   aurelion2: "assets/МонстрАурелионЭтап2.png",
@@ -4824,6 +4834,37 @@ const SPECIES = {
   orbitron: { name: "Орбитрон", el: "water", els: ["water", "fire"], rarity: "mythic", sprites: ["orbitronEgg", "orbitron1", "orbitron2", "orbitron3", "orbitron4"], stages: [1, 10, 25, 40], skills: ["hit", "waveHit", "fireBolt", "tide", "scorch", "whirl", "blaze", "deluge", "stormRend"], base: { hp: 130, atk: 44, def: 23, spd: 23 }, eggMs: 24 * 3600e3 },
   vesperon: { name: "Весперон", el: "dark", els: ["dark", "water"], rarity: "mythic", sprites: ["vesperonEgg", "vesperon1", "vesperon2", "vesperon3", "vesperon4"], stages: [1, 10, 25, 40], skills: ["hit", "nightSlash", "waveHit", "mist", "tide", "nightVeil", "moonSiphon", "stormRend", "cataclysm"], base: { hp: 142, atk: 40, def: 24, spd: 20 }, eggMs: 24 * 3600e3 },
 
+  /* ---------- пять новых существ: два эпика и три мифика ---------- */
+  mayakrut: {
+    name: "Маякрут", el: "water", els: ["water", "earth"], rarity: "epic",
+    sprites: ["mayakrutEgg", "mayakrut1", "mayakrut2", "mayakrut3"], stages: [1, 15, 35],
+    skills: ["hit", "waveHit", "rockSlam", "tide", "bulwark", "tidalAnchor", "beaconBarrier", "granite"],
+    base: { hp: 128, atk: 25, def: 29, spd: 10 }, eggMs: 10 * 3600e3
+  },
+  zharomoh: {
+    name: "Жаромох", el: "nature", els: ["nature", "fire"], rarity: "epic",
+    sprites: ["zharomohEgg", "zharomoh1", "zharomoh2", "zharomoh3"], stages: [1, 15, 35],
+    skills: ["hit", "vineLash", "fireBolt", "bloom", "scorch", "sporeBurst", "emberMend", "inferno"],
+    base: { hp: 110, atk: 32, def: 21, spd: 14 }, eggMs: 10 * 3600e3
+  },
+  noktilyus: {
+    name: "Ноктилюс", el: "dark", els: ["dark", "water"], rarity: "mythic",
+    sprites: ["noktilyusEgg", "noktilyus1", "noktilyus2", "noktilyus3"], stages: [1, 15, 35],
+    skills: ["hit", "nightSlash", "waveHit", "mist", "tide", "abyssalLull", "eclipseCurrent", "moonWell"],
+    base: { hp: 146, atk: 34, def: 28, spd: 23 }, eggMs: 26 * 3600e3
+  },
+  hronomeh: {
+    name: "Хрономех", el: "earth", els: ["earth", "dark"], rarity: "mythic",
+    sprites: ["hronomehEgg", "hronomeh1", "hronomeh2", "hronomeh3"], stages: [1, 15, 35],
+    skills: ["hit", "rockSlam", "nightSlash", "bulwark", "quake", "chronoshield", "hourglassCrash", "timeLock"],
+    base: { hp: 172, atk: 38, def: 36, spd: 13 }, eggMs: 26 * 3600e3
+  },
+  rozognev: {
+    name: "Розогнев", el: "fire", els: ["fire", "nature"], rarity: "mythic",
+    sprites: ["rozognevEgg", "rozognev1", "rozognev2", "rozognev3"], stages: [1, 15, 35],
+    skills: ["hit", "vineLash", "fireBolt", "thorn", "entangle", "pollenMend", "petalDash", "roseInferno"],
+    base: { hp: 142, atk: 44, def: 22, spd: 25 }, eggMs: 26 * 3600e3
+  },
   /* ---------- богоподобные ----------
      Третья стихия у них — Богоподобие. Она стоит вне круга «кто кого бьёт»,
      зато только у неё есть приёмы пятой ступени, и жить такое чудище может
@@ -6703,6 +6744,22 @@ const LINEAGE = [
           { species: "shlaks", chance: 23, ms: 6 * 3600e3 },
           { species: "granks", chance: 20, ms: 4 * 3600e3 }
         ]
+      },
+      {
+        parents: ["ashira", "krator"], ms: 14 * 3600e3,
+        results: [
+          { species: "zharomoh", chance: 48 },
+          { species: "ashira", chance: 27, ms: 8 * 3600e3 },
+          { species: "krator", chance: 25, ms: 8 * 3600e3 }
+        ]
+      },
+      {
+        parents: ["magmavor", "verdantis"], ms: 36 * 3600e3,
+        results: [
+          { species: "rozognev", chance: 28 },
+          { species: "magmavor", chance: 36, ms: 24 * 3600e3 },
+          { species: "verdantis", chance: 36, ms: 24 * 3600e3 }
+        ]
       }
     ]
   },
@@ -6757,6 +6814,14 @@ const LINEAGE = [
         results: [
           { species: "livena", chance: 80 },
           { species: "harik", chance: 20, ms: 2 * 3600e3 }
+        ]
+      },
+      {
+        parents: ["akvarok", "krator"], ms: 18 * 3600e3,
+        results: [
+          { species: "mayakrut", chance: 48 },
+          { species: "akvarok", chance: 27, ms: 10 * 3600e3 },
+          { species: "krator", chance: 25, ms: 10 * 3600e3 }
         ]
       }
     ]
@@ -6823,7 +6888,30 @@ const LINEAGE = [
       }
     ]
   }
-];
+,
+  {
+    id: "dark",
+    name: "Тьма",
+    el: "dark",
+    lines: [
+      {
+        parents: ["vesperon", "orbitron"], ms: 36 * 3600e3,
+        results: [
+          { species: "noktilyus", chance: 28 },
+          { species: "vesperon", chance: 37, ms: 24 * 3600e3 },
+          { species: "orbitron", chance: 35, ms: 24 * 3600e3 }
+        ]
+      },
+      {
+        parents: ["geodrax", "vesperon"], ms: 36 * 3600e3,
+        results: [
+          { species: "hronomeh", chance: 26 },
+          { species: "geodrax", chance: 38, ms: 24 * 3600e3 },
+          { species: "vesperon", chance: 36, ms: 24 * 3600e3 }
+        ]
+      }
+    ]
+  }];
 
 /* ---------- ветки схемы ----------
    У каждой стихии своя вкладка: завёл стихию в Мастерской — появилась и ветка.
@@ -8274,7 +8362,20 @@ const ABILITIES = {
   verdantCrown: { id: "verdantCrown", tier: 5, name: "Корона рощи", kind: "shield", cost: 58, power: 0.72, turns: 3, cd: 5, el: "nature", target: "ally", desc: "Вердантис обвивает союзника древними корнями." },
   crystalPrison: { id: "crystalPrison", tier: 5, name: "Кристальная темница", kind: "stun", cost: 58, power: 1.15, turns: 2, cd: 5, el: "earth", target: "foe", desc: "Геодракс запирает врага в янтарном кристалле на два хода." },
   stormRend: { id: "stormRend", tier: 5, name: "Грозовой разрыв", kind: "damage", cost: 68, power: 2.72, cd: 4, el: "water", target: "foe", desc: "Орбитрон пробивает цель разрядом штормового неба." },
-  nightVeil: { id: "nightVeil", tier: 5, name: "Покров сумерек", kind: "shield", cost: 56, power: 0.68, turns: 3, cd: 5, target: "ally", desc: "Весперон прячет союзника в холодной ночной тени." }};
+  nightVeil: { id: "nightVeil", tier: 5, name: "Покров сумерек", kind: "shield", cost: 56, power: 0.68, turns: 3, cd: 5, target: "ally", desc: "Весперон прячет союзника в холодной ночной тени." },
+  beaconBarrier: { id: "beaconBarrier", tier: 4, name: "Сигнальный купол", kind: "shield", cost: 50, power: 0.64, turns: 3, cd: 4, el: "water", target: "ally", icon: "🔆", desc: "Маякрут накрывает союзника световым куполом: щит держится три хода." },
+  tidalAnchor: { id: "tidalAnchor", tier: 4, name: "Якорная волна", kind: "stun", cost: 48, power: 1.05, turns: 1, cd: 4, el: "earth", target: "foe", icon: "⚓", desc: "Тяжёлая волна прибивает цель к месту и сбивает её ход." },
+  sporeBurst: { id: "sporeBurst", tier: 3, name: "Вспышка спор", kind: "damage", cost: 46, power: 2.02, cd: 2, el: "nature", target: "foe", icon: "✺", desc: "Жаромох взрывает облако раскалённых спор." },
+  emberMend: { id: "emberMend", tier: 4, name: "Угольная живица", kind: "heal", cost: 48, power: 0.46, cd: 4, el: "fire", target: "ally", icon: "✹", desc: "Тёплая смола затягивает раны и возвращает почти половину здоровья." },
+  eclipseCurrent: { id: "eclipseCurrent", tier: 4, name: "Течение затмения", kind: "shield", cost: 54, power: 0.7, turns: 3, cd: 5, el: "dark", target: "ally", icon: "☾", desc: "Ноктилюс укрывает союзника тёмной водой на три хода." },
+  abyssalLull: { id: "abyssalLull", tier: 4, name: "Колыбель бездны", kind: "stun", cost: 52, power: 1.12, turns: 1, cd: 4, el: "dark", target: "foe", icon: "◒", desc: "Лунная песнь глубин лишает противника следующего хода." },
+  moonWell: { id: "moonWell", tier: 5, name: "Лунный колодец", kind: "heal", cost: 62, power: 0.68, cd: 5, el: "water", target: "ally", icon: "◉", desc: "Сфера луны восстанавливает союзнику больше половины здоровья." },
+  timeLock: { id: "timeLock", tier: 5, name: "Часовой замок", kind: "stun", cost: 62, power: 1.22, turns: 2, cd: 5, el: "dark", target: "foe", icon: "⌛", desc: "Хрономех замыкает время вокруг цели: она пропускает два хода." },
+  chronoshield: { id: "chronoshield", tier: 5, name: "Панцирь эпох", kind: "shield", cost: 60, power: 0.82, turns: 3, cd: 5, el: "earth", target: "ally", icon: "◌", desc: "Слои прошедших эпох образуют самый прочный союзный щит." },
+  hourglassCrash: { id: "hourglassCrash", tier: 5, name: "Падение песков", kind: "damage", cost: 70, power: 2.84, cd: 4, el: "earth", target: "foe", icon: "⌛", desc: "Секунды обращаются в гравитационный удар." },
+  pollenMend: { id: "pollenMend", tier: 4, name: "Золотая пыльца", kind: "heal", cost: 46, power: 0.44, cd: 4, el: "nature", target: "ally", icon: "✿", desc: "Розогнев выпускает целебную пыльцу к самому раненому союзнику." },
+  petalDash: { id: "petalDash", tier: 4, name: "Лепестковый рывок", kind: "damage", cost: 50, power: 2.18, cd: 3, el: "fire", target: "foe", icon: "➹", desc: "Огненная орхидея исчезает в росчерке лепестков и бьёт в упор." },
+  roseInferno: { id: "roseInferno", tier: 5, name: "Цветение пекла", kind: "damage", cost: 72, power: 2.92, cd: 4, el: "fire", target: "foe", icon: "❈", desc: "На поле боя раскрывается огненная роза." }};
 
 /* Приёмы, собранные в Мастерской, ложатся поверх встроенных: новый ключ —
    новый приём, знакомый ключ — правка существующего. */
