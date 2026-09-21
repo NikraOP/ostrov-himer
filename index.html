@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Остров Химер">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -2896,6 +2896,7 @@ html, body{overscroll-behavior:none}
 
 /* в приложении шапку и док отодвигаем от «чёлки» и скруглённых углов и лёжа */
 html.app-mode #top{left:max(8px,env(safe-area-inset-left)); right:max(8px,env(safe-area-inset-right))}
+html.app-mode #hint{margin-top:env(safe-area-inset-top)}
 @media (orientation:landscape){
   html.app-mode #top{top:max(6px,env(safe-area-inset-top))}
   html.app-mode #dock{bottom:max(6px,env(safe-area-inset-bottom))}
@@ -3172,12 +3173,36 @@ const cv  = document.getElementById("cv");
 const ctx = cv.getContext("2d");
 const view  = { W: 0, H: 0, dpr: 1 };
 const clock = { now: 0, dt: 0 };
+/* iPhone, игра как приложение, прозрачная строка состояния: WebKit отдаёт
+   высоту окна без этой строки, хотя рисует страницу от самого верха экрана, —
+   внизу остаётся пустая полоса ровно в её высоту. Досчитываем сами, но не
+   выше экрана: если Apple ошибку исправит, лишнего не прибавится. */
+let safeTopProbe = null;
+function safeTop() {
+  if (!safeTopProbe) {
+    safeTopProbe = document.createElement("div");
+    safeTopProbe.style.cssText = "position:fixed;top:0;left:0;width:0;height:0;visibility:hidden;padding-top:env(safe-area-inset-top)";
+    document.body.append(safeTopProbe);
+  }
+  return parseFloat(getComputedStyle(safeTopProbe).paddingTop) || 0;
+}
+function appHeight() {
+  const h = innerHeight;
+  if (navigator.standalone !== true || !/iPhone|iPod/.test(navigator.userAgent)) return h;
+  const long = Math.max(screen.width, screen.height), short = Math.min(screen.width, screen.height);
+  const screenH = innerWidth > innerHeight ? short : long;
+  return Math.max(h, Math.min(screenH, h + safeTop()));
+}
+
 function resizeCanvas() {
   /* Потолок плотности: на 2K мониторе с dpr 2 холст вышел бы в 14 миллионов
      точек, и каждый кадр пришлось бы закрашивать их все. Полтора даёт ту же
      резкость для рисованной графики и вчетверо меньше работы. */
   view.dpr = Math.min(1.5, devicePixelRatio || 1);
-  view.W = innerWidth; view.H = innerHeight;
+  view.W = innerWidth; view.H = appHeight();
+  // окно игры тянем на ту же высоту, что и холст, — иначе снизу виден фон страницы
+  const app = document.getElementById("app");
+  if (app) { app.style.bottom = view.H !== innerHeight ? "auto" : ""; app.style.height = view.H !== innerHeight ? view.H + "px" : "" }
   cv.width  = Math.round(view.W * view.dpr);
   cv.height = Math.round(view.H * view.dpr);
   ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
