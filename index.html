@@ -2680,6 +2680,13 @@ html,body,#app{touch-action:pan-x pan-y}
 .imp-b:disabled{opacity:.5; cursor:not-allowed}
 .imp-b:focus-visible{outline:3px solid var(--sky); outline-offset:2px}
 
+/* карандаш у имени в карточке чудища */
+.mc-ren{margin-left:6px; width:28px; height:28px; border-radius:50%; cursor:pointer;
+  border:2px solid var(--line); background:#FFF7E7; color:var(--ink); font:900 14px/1 var(--ui);
+  vertical-align:middle; box-shadow:var(--lift-sm)}
+.mc-ren:hover{filter:brightness(1.05)}
+.mc-ren:focus-visible{outline:3px solid var(--sky); outline-offset:2px}
+
 /* ---------- Мутатор ---------- */
 .mt-list{display:grid; gap:6px; margin:8px 0}
 .mt-row{display:grid; grid-template-columns:1fr auto; gap:2px 10px; padding:8px 10px; border-radius:11px;
@@ -10941,7 +10948,8 @@ function initModals() {
     const power = Math.round(stats.hp * 0.5 + stats.atk * 3 + stats.def * 2 + stats.spd * 1.5);
 
     $("#monsterModalTitle").innerHTML = rarityBadge(m || species, "lg")
-      + " " + esc(m ? m.name : species.name) + (m ? " " + sexIcon(m) : "");
+      + " " + esc(m ? m.name : species.name) + (m ? " " + sexIcon(m)
+        + ` <button class="mc-ren" data-rename type="button" title="Переименовать" aria-label="Переименовать">✎</button>` : "");
 
     $("#monsterModalBody").innerHTML = `
       <div class="mc">
@@ -11105,6 +11113,10 @@ function initModals() {
       showMonster({ m, id, sp, cost });
     });
 
+    // имя меняется карандашом у заголовка; после окна имени вернёмся в карточку
+    const ren = $("#monsterModalTitle [data-rename]");
+    if (ren) ren.onclick = () => { renameFromCard = m; bus.emit("modal:rename", m) };
+
     const more = карточка.querySelector("[data-more]");
     if (more) more.onclick = () => {
       skillsOpen = !skillsOpen;
@@ -11156,6 +11168,12 @@ function initModals() {
 
   // переименование
   let renameTarget = null;
+  let renameFromCard = null;            // открыто из карточки — туда и вернуться
+  const backToCard = () => {
+    const m = renameFromCard;
+    renameFromCard = null;
+    if (m && S.mons.includes(m)) showMonster({ m });
+  };
   bus.on("modal:rename", m => {
     renameTarget = m;
     $("#rName").value = m.name;
@@ -11171,7 +11189,9 @@ function initModals() {
       bus.emit("ui:sheet");
     }
     closeModal();
+    backToCard();
   };
+  $("#mRen [data-close]").onclick = () => { closeModal(); backToCard() };
   $("#rName").addEventListener("keydown", e => { if (e.key === "Enter") $("#rOk").click() });
 
   // справка
