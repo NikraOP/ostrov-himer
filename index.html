@@ -2757,6 +2757,15 @@ html,body,#app{touch-action:pan-x pan-y}
 .ar-card b{font-size:17px; font-family:var(--disp); color:#FFF3CF}
 .ar-card .b{justify-self:start; margin-top:4px}
 .ar-rankcard{grid-column:span 2; grid-template-columns:auto 1fr; align-items:center; gap:12px}
+.ar-rk-txt{display:grid; gap:3px; min-width:0}
+/* числа и кнопки арены не рвём посередине: «5 / 16» и «10 млн 🪙» читаются целиком */
+.ar-card b,.ar-shell .b{white-space:nowrap}
+.ar-card.ar-rule b{white-space:normal}          /* правило недели — фраза, ей перенос нужен */
+.ar-shell .ar-up .b{white-space:normal}
+.ar-nw{white-space:nowrap}
+.ar-next{margin-bottom:14px}
+.ar-next h3,.ar-sub{font-family:var(--disp); font-size:14px; margin:0 0 8px; color:#FFE9A8}
+.ar-sub{margin-top:4px}
 .ar-rule b{font-family:var(--ui); font-size:13.5px}
 .ar-chest{border-color:rgba(255,193,59,.6); background:rgba(255,193,59,.12)}
 .ar-bar{display:block; height:8px; border-radius:99px; background:rgba(255,255,255,.12); overflow:hidden; margin:4px 0}
@@ -2836,9 +2845,34 @@ html,body,#app{touch-action:pan-x pan-y}
 .ar-ranks small{font-size:11px; color:#9FCFCB}
 
 @media (max-width:640px){
-  .ar-rankcard{grid-column:auto}
-  .ar-hero{grid-template-columns:1fr}
-  .ar-hero img{max-width:260px; justify-self:center}
+  /* шапка арены на телефоне: ранг и правило на всю ширину, слава и попытки — рядом */
+  .ar-shell{padding-top:calc(12px + env(safe-area-inset-top))}
+  .ar-head{padding-bottom:10px}
+  .ar-head small{font-size:10px}
+  .ar-top{grid-template-columns:1fr 1fr; gap:8px; margin:10px 0}
+  .ar-rankcard,.ar-rule,.ar-chest{grid-column:1 / -1}
+  .ar-rankcard{gap:10px}
+  .ar-rank-lg{width:52px; height:52px}
+  .ar-card{padding:9px 11px; gap:3px}
+  .ar-card b{font-size:15px}
+  .ar-rule b{font-size:12.5px; line-height:1.3}
+  .ar-tries{grid-template-columns:1fr auto; align-items:center}
+  .ar-tries small{grid-column:1 / -1}
+  .ar-tries .b{margin-top:0}
+  .ar-tabs{flex-wrap:wrap; overflow:visible; gap:5px}
+  .ar-tab{padding:7px 10px; font-size:12px}
+  .ar-hero{grid-template-columns:1fr; gap:10px}
+  .ar-hero img{max-width:170px; justify-self:center}
+  .ar-hero h3{font-size:15px}
+  .ar-hero p{font-size:12.5px}
+  .ar-up{padding:8px 10px}
+  .ar-up .b{width:100%}
+  .ar-info b{font-size:13px; line-height:1.25}
+  .ar-info small{display:block; line-height:1.35}
+  .ar-act .b{padding:8px 12px}
+  .ar-item em{position:static; order:-1}
+  .ar-hist{flex-wrap:wrap; gap:4px 10px}
+  .ar-hist span{margin-left:0; width:100%}
   .ar-step{grid-template-columns:auto 1fr auto; gap:8px}
   .ar-step .ar-faces{grid-column:1 / -1; order:3}
   .ar-face{width:38px; height:38px}
@@ -9963,6 +9997,7 @@ function beginFight() {
   const B = S.battle;
   if (!B || B.phase !== "prep") return;
   B.phase = "fight";
+  B.started = true;          // вышел до этого момента — боя не было (арена не списывает попытку)
   B.order = roundOrder();
   B.turn = 0;
   B.target = alive(B.foes)[0] || null;
@@ -10341,7 +10376,7 @@ function closeBattle() {
   S.battle = null;
   bus.emit("battle:end", res);
   persist();
-  if (onEnd) onEnd({ win: res.win, stars: res.stars, alive: res.alive || 0 });
+  if (onEnd) onEnd({ win: res.win, stars: res.stars, alive: res.alive || 0, started: !!B.started });
 }
 
 
@@ -15655,7 +15690,6 @@ function arenaFight(kind, friendId) {
     const peak = A.best >= A.ladder.length;
     enemies = stepFoes(step);
     title = (peak ? "Вершина арены" : "Арена · ступень " + (k + 1) + "/" + A.ladder.length);
-    A.tries.used++;
     onWin = () => {
       if (peak) {
         A.rating += ARENA.peak; A.peakWins++;
@@ -15689,7 +15723,15 @@ function arenaFight(kind, friendId) {
     enemies, title, reward: {},
     onEnd: res => {
       S.team = saveTeam; syncTeam();
-      let msg = res && res.win ? onWin() : onLose();
+      // вышел ещё на подготовке — боя не было: ни попытки, ни рейтинга
+      if (!res || !res.started) {
+        persist();
+        toast("Бой отменён — попытка не потрачена");
+        bus.emit("arena:open");
+        return;
+      }
+      if (kind !== "friend") A.tries.used++;
+      let msg = res.win ? onWin() : onLose();
       const rankNow = arenaRankIndex();
       if (rankNow !== rankBefore) msg += rankNow > rankBefore
         ? ". Новый ранг: " + ARENA_RANKS[rankNow].name + "!" : ". Ранг понижен: " + ARENA_RANKS[rankNow].name;
@@ -15700,7 +15742,6 @@ function arenaFight(kind, friendId) {
   });
   if (!ok) {
     S.team = saveTeam;
-    if (kind !== "friend") A.tries.used--;
     return "Бой не начался";
   }
   if (kind !== "friend") S.battle.rule = A.rule;
@@ -15889,11 +15930,11 @@ function renderArena() {
 
   arenaRoot.querySelector("#arTop").innerHTML = `
     <div class="ar-card ar-rankcard">${rankBadge(rank, "lg")}
-      <div><b>${esc(rank.name)}</b><small>рейтинг ${fmt(A.rating)}${next ? " · до «" + esc(next.name) + "» " + fmt(next.min - A.rating) : " · высший ранг"}</small>
+      <div class="ar-rk-txt"><b>${esc(rank.name)}</b><small>рейтинг ${fmt(A.rating)}${next ? " · до «" + esc(next.name) + "» " + fmt(next.min - A.rating) : " · высший ранг"}</small>
         <span class="ar-bar"><i style="width:${pct}%"></i></span>
         <small>Отголоски сильнее на ${Math.round((arenaTierPower() - 1) * 100)}%, награды щедрее на ${Math.round((arenaTierReward() - 1) * 100)}%</small></div></div>
-    <div class="ar-card"><small>Слава</small><b>${fmt(A.glory)} ✦</b></div>
-    <div class="ar-card"><small>Попытки сегодня</small><b>${arenaTriesLeft()} / ${ARENA.tries + A.tries.bought}</b>
+    <div class="ar-card ar-glory"><small>Слава</small><b>${fmt(A.glory)} ✦</b></div>
+    <div class="ar-card ar-tries"><small>Попытки сегодня</small><b>${arenaTriesLeft()} / ${ARENA.tries + A.tries.bought}</b>
       <button class="b sm" data-ar="buytry">Ещё · ${ARENA.tryCrystals} <img class="ic3" src="${ASSET_SRC.crystal}" alt=""></button></div>
     <div class="ar-card ar-rule"><small>Правило недели · сброс через ${tleft(arenaWeekLeft())}</small><b>${esc(arenaRuleText())}</b></div>
     ${A.chest ? `<div class="ar-card ar-chest"><small>Сундук прошлой недели</small><div class="ar-chips">${arChips(A.chest)}</div>
@@ -15914,7 +15955,7 @@ function arenaLadderHtml() {
   const A = ensureArena();
   const n = A.ladder.length, next = arenaNextStep(), peak = A.best >= n;
   const team = arenaTeam(), myPower = team.reduce((s, m) => s + powerOf(m), 0);
-  const rows = A.ladder.map((step, k) => {
+  const row = (step, k) => {
     const done = k < A.best, cur = k === next && !peak, top = peak && k === n - 1;
     const foes = stepFoes(step), power = Math.round(echoPower(foes));
     const r = !done && k + 1 > A.paid ? arenaStepReward(k) : null;
@@ -15928,16 +15969,21 @@ function arenaLadderHtml() {
           ? `<button class="b go" data-ar="fight" ${arenaTriesLeft() ? "" : "disabled"}>${top ? "За рейтинг" : "В бой"}</button>`
           : done ? "✓" : "🔒"}</div>
       </div>`;
-  }).reverse().join("");
+  };
+  const rows = A.ladder.map(row).reverse().join("");
+  // следующий бой — сразу под вкладками: иначе на телефоне до него листать всю лестницу
+  const nextCard = `<section class="ar-next"><h3>${peak ? "Вершина — бой за рейтинг" : "Следующий бой · ступень " + (next + 1) + " из " + n}</h3>
+      ${row(A.ladder[next], next)}
+      ${arenaTriesLeft() ? "" : `<p class="ar-note">Попытки на сегодня кончились — купи ещё одну наверху или загляни завтра.</p>`}</section>`;
 
   const lvl = A.lvl, up = lvl < ARENA.steps.length;
   const upBlock = up ? `<div class="ar-up">
       <div><b>Уровень ${lvl + 1}: ${ARENA.steps[lvl]} ступеней, верх — ${Math.round(ARENA.top[lvl] * 100)}% силы</b>
         <small>${A.cleared >= lvl ? "Лестница этого уровня пройдена — можно улучшать." : "Сначала пройди лестницу " + lvl + " уровня до конца."}</small></div>
-      <button class="b gold" data-ar="upgrade" ${A.cleared >= lvl ? "" : "disabled"}>Улучшить · ${fmtShort(ARENA.upCost[lvl])} <img class="ic3" src="${ASSET_SRC.gold}" alt=""></button>
+      <button class="b gold" data-ar="upgrade" ${A.cleared >= lvl ? "" : "disabled"}>Улучшить · <span class="ar-nw">${fmtShort(ARENA.upCost[lvl])} <img class="ic3" src="${ASSET_SRC.gold}" alt=""></span></button>
     </div>` : `<div class="ar-up"><b>Арена на высшем уровне</b></div>`;
 
-  return `<section class="ar-hero">
+  return nextCard + `<section class="ar-hero">
       <img src="${ASSET_SRC[arenaVisualKey()]}" alt="">
       <div><h3>Уровень ${lvl} · пройдено ${Math.min(A.best, n)} из ${n}</h3>
         <p>Твой отряд: сила <b>${fmt(Math.round(myPower))}</b>${team.length ? " — " + team.map(m => esc(m.name)).join(", ") : ""}.
@@ -15945,6 +15991,7 @@ function arenaLadderHtml() {
         ${peak ? `<p class="ar-note">Лестница недели пройдена. Бои на вершине дают по ${ARENA.peak} рейтинга.</p>` : ""}
         ${upBlock}</div>
     </section>
+    <h3 class="ar-sub">Вся лестница</h3>
     <div class="ar-ladder">${rows}</div>`;
 }
 
