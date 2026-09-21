@@ -5,6 +5,15 @@
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Остров Химер</title>
+<!-- игра как приложение: манифест, значки и полный экран на телефоне (см. src/ui/install.js) -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0F2A33">
+<link rel="icon" type="image/png" href="icons/favicon-64.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Остров Химер">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Unbounded:wght@700;800&display=swap">
@@ -2878,6 +2887,54 @@ html,body,#app{touch-action:pan-x pan-y}
   .ar-face{width:38px; height:38px}
   .ar-row{flex-direction:column; align-items:stretch}
 }
+</style>
+<style>
+/* ===== css/install.css ===== */
+/* Игра как приложение: окошко установки, подсказка в браузере телефона и
+   поправки для запуска на весь экран. */
+html, body{overscroll-behavior:none}
+
+/* в приложении шапку и док отодвигаем от «чёлки» и скруглённых углов и лёжа */
+html.app-mode #top{left:max(8px,env(safe-area-inset-left)); right:max(8px,env(safe-area-inset-right))}
+@media (orientation:landscape){
+  html.app-mode #top{top:max(6px,env(safe-area-inset-top))}
+  html.app-mode #dock{bottom:max(6px,env(safe-area-inset-bottom))}
+}
+
+#installBox{position:fixed; inset:0; z-index:10000; display:none; align-items:center; justify-content:center;
+  padding:16px; background:rgba(4,18,24,.62); backdrop-filter:blur(3px)}
+#installBox.on{display:flex}
+.inst-card{width:min(440px,100%); max-height:calc(100dvh - 32px); overflow:auto; padding:18px 18px 16px;
+  border-radius:18px; color:#EAF7F6; background:linear-gradient(160deg,#153A45,#0B222B);
+  border:1px solid rgba(143,216,211,.35); box-shadow:0 18px 50px rgba(0,0,0,.45)}
+.inst-card h3{font-family:var(--disp); font-size:17px; margin:0 0 10px; color:#FFE9A8}
+.inst-steps{margin:0 0 10px; padding-left:22px; display:grid; gap:9px; font-size:14px; line-height:1.4}
+.inst-note{font-size:12.5px; line-height:1.45; color:#B9DAD7; margin:6px 0 10px}
+.inst-note b{color:#FFF3CF}
+.inst-row{display:flex; gap:8px; flex-wrap:wrap}
+.inst-card textarea{width:100%; border-radius:10px; border:1px solid rgba(143,216,211,.4); background:rgba(0,0,0,.3);
+  color:#EAF7F6; font:600 13px var(--ui); padding:8px 10px; resize:vertical; word-break:break-all;
+  user-select:text; -webkit-user-select:text}
+.inst-card #instInfo .b{margin-top:8px}
+/* значок «Поделиться» Safari: квадрат со стрелкой вверх */
+.inst-share{display:inline-block; width:16px; height:18px; vertical-align:-3px; margin:0 2px;
+  border:2px solid #7FC8FF; border-top:0; border-radius:0 0 3px 3px; position:relative}
+.inst-share::before{content:""; position:absolute; left:50%; top:-9px; width:2px; height:13px; margin-left:-1px; background:#7FC8FF}
+.inst-share::after{content:""; position:absolute; left:50%; top:-10px; width:7px; height:7px; margin-left:-4.5px;
+  border-left:2px solid #7FC8FF; border-top:2px solid #7FC8FF; transform:rotate(45deg)}
+.inst-plus{display:inline-grid; place-items:center; width:20px; height:20px; border-radius:5px;
+  border:2px solid #7FC8FF; color:#7FC8FF; font-size:13px; line-height:1; vertical-align:-3px}
+
+#installHint{position:fixed; z-index:60; left:50%; transform:translateX(-50%);
+  top:calc(max(8px,env(safe-area-inset-top)) + 58px); width:min(440px,calc(100% - 16px));
+  display:grid; grid-template-columns:40px 1fr auto auto; gap:8px; align-items:center; padding:8px 8px 8px 10px;
+  border-radius:15px; color:#EAF7F6; background:linear-gradient(160deg,#153A45f2,#0B222Bf2);
+  border:1px solid rgba(143,216,211,.35); box-shadow:0 10px 30px rgba(0,0,0,.35)}
+#installHint img{width:40px; height:40px; border-radius:10px}
+#installHint b{display:block; font-size:13px}
+#installHint small{display:block; font-size:11px; color:#B9DAD7; line-height:1.3}
+.inst-x{width:28px; height:28px; border-radius:50%; border:0; cursor:pointer; background:rgba(255,255,255,.1);
+  color:#EAF7F6; font:900 12px var(--ui)}
 </style>
 </head>
 <body>
@@ -14287,11 +14344,15 @@ function renderProfileWindow() {
     <p class="pf-note">Опыт хозяина растёт от работы на острове: стройка и улучшения,
       расчистка деревьев, вылупление чудищ, кладки в саду и пройденные узлы странствий.</p>
 
+    ${installProfileHtml()}
+
     <div class="pf-save">
       <h3>Сохранение</h3>
-      <p class="pf-note">Скачай файл, чтобы перенести прогресс в другой браузер или на другое
-        устройство, — там его можно будет загрузить обратно вот этой же кнопкой.</p>
+      <p class="pf-note">Перенести прогресс в другой браузер, на другое устройство или в приложение
+        на iPhone: скопируй код и вставь его там. Или скачай файл и загрузи его обратно.</p>
       <div class="rowb">
+        <button class="b sm go" id="pfCopyCode">Скопировать код</button>
+        <button class="b sm" id="pfPasteCode">Вставить код</button>
         <button class="b sm" id="pfExport">Скачать файл</button>
         <button class="b sm" id="pfImportPick">Загрузить файл</button>
       </div>
@@ -14300,6 +14361,7 @@ function renderProfileWindow() {
     </div>`;
 
   wireSaveButtons();
+  wireInstallProfile();
 }
 
 /* ---------- скачать / загрузить сохранение ----------
@@ -16148,6 +16210,191 @@ function initArena() {
   setInterval(() => { if (arenaIsOpen() && !S.battle && arenaTab !== "friends") renderArena() }, 30000);
 }
 
+/* ===== src/ui/install.js ===== */
+/* Игра как приложение (PWA): значок на экране телефона, запуск на весь
+   экран, работа без интернета (sw.js рядом с index.html).
+
+   Android и Chrome сами присылают событие beforeinstallprompt — по нему
+   показываем кнопку «Установить». iPhone такой кнопки не даёт: там ставят
+   через «Поделиться → На экран Домой», и мы показываем, куда нажать.
+
+   Важно для iPhone: у установленного приложения своё хранилище, отдельное
+   от Safari. Поэтому прогресс переносится кодом: в Safari «Скопировать код
+   сохранения», в приложении — «Вставить». При первом запуске приложения с
+   пустым островом игра сама это предлагает. */
+
+let installPrompt = null;
+const INSTALL_HINT_KEY = "ostrov-himer.install-hint";
+const TRANSFER_KEY = "ostrov-himer.transfer-asked";
+
+const isStandalone = () =>
+  matchMedia("(display-mode: standalone)").matches || matchMedia("(display-mode: fullscreen)").matches
+  || navigator.standalone === true;
+const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent)
+  || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+const isPhone = () => matchMedia("(pointer: coarse)").matches && Math.min(innerWidth, innerHeight) < 900;
+const lsGet = k => { try { return localStorage.getItem(k) } catch (e) { return null } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v) } catch (e) {} };
+
+/* ---------- код сохранения: перенос прогресса без файлов ---------- */
+
+const SAVE_CODE = "ОХС1.";
+function saveCode() {
+  return SAVE_CODE + btoa(unescape(encodeURIComponent(exportSave(S))));
+}
+function parseSaveCode(text) {
+  const raw = String(text || "").trim().replace(/\s+/g, "");
+  if (!raw.startsWith(SAVE_CODE)) return { error: "Это не код сохранения — он начинается с «ОХС1.»" };
+  let json;
+  try { json = decodeURIComponent(escape(atob(raw.slice(SAVE_CODE.length)))) }
+  catch (e) { return { error: "Код повреждён — скопируй его ещё раз целиком" } }
+  return parseSave(json);
+}
+
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); return true } catch (e) {}
+  const t = document.createElement("textarea");
+  t.value = text; t.style.position = "fixed"; t.style.opacity = "0";
+  document.body.append(t); t.select();
+  let ok = false;
+  try { ok = document.execCommand("copy") } catch (e) {}
+  t.remove();
+  return ok;
+}
+
+/* ---------- окошко ---------- */
+
+let instRoot = null;
+function instModal(html) {
+  if (!instRoot) {
+    instRoot = document.createElement("div");
+    instRoot.id = "installBox";
+    instRoot.addEventListener("click", e => { if (e.target === instRoot) closeInstall() });
+    document.body.append(instRoot);
+  }
+  instRoot.innerHTML = `<div class="inst-card">${html}</div>`;
+  instRoot.classList.add("on");
+  const x = instRoot.querySelector("[data-inst-close]");
+  if (x) x.onclick = closeInstall;
+  return instRoot;
+}
+function closeInstall() { if (instRoot) instRoot.classList.remove("on") }
+
+/** Как поставить на iPhone: три шага с настоящими значками Safari. */
+function showIOSHow() {
+  instModal(`<h3>Игра как приложение</h3>
+    <ol class="inst-steps">
+      <li>Нажми <b>«Поделиться»</b> <span class="inst-share" aria-hidden="true"></span> внизу Safari
+        (на iPad — вверху справа).</li>
+      <li>Пролистай и выбери <b>«На экран Домой»</b> <span class="inst-plus" aria-hidden="true">＋</span></li>
+      <li>Нажми <b>«Добавить»</b> — на экране появится значок «Остров Химер».</li>
+    </ol>
+    <p class="inst-note">Приложение откроется на весь экран и будет работать без интернета.
+      <b>Прогресс перенеси кодом:</b> здесь, в Safari, открой профиль → «Скопировать код»,
+      а в приложении — «Вставить код».</p>
+    <div class="inst-row"><button class="b go" id="instCopy">Скопировать код сохранения</button>
+      <button class="b" data-inst-close>Понятно</button></div>`);
+  $("#instCopy").onclick = async () => toast(await copyText(saveCode())
+    ? "Код скопирован — вставь его в приложении" : "Не вышло скопировать — сделай это в профиле", "good");
+}
+
+/** Установка: Android — системное окно, iPhone — подсказка. */
+async function installApp() {
+  if (isStandalone()) return toast("Игра уже открыта как приложение", "good");
+  if (installPrompt) {
+    installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice.catch(() => ({ outcome: "dismissed" }));
+    installPrompt = null;
+    if (outcome === "accepted") toast("Готово: значок игры на экране телефона", "good");
+    bus.emit("install:changed");
+    return;
+  }
+  if (isIOS()) return showIOSHow();
+  toast("Открой игру в Chrome на Android или в Safari на iPhone — там её можно установить", "bad");
+}
+
+/** Вставить код сохранения: разбор, показ, подтверждение. */
+function showPasteSave(first = false) {
+  instModal(`<h3>${first ? "Перенести прогресс из браузера?" : "Вставить код сохранения"}</h3>
+    ${first ? `<p class="inst-note">У приложения на iPhone своё хранилище — прогресс из Safari сам сюда не попадёт.
+      Открой игру в Safari → профиль → <b>«Скопировать код»</b>, вернись сюда и вставь.</p>` : ""}
+    <textarea id="instCode" rows="4" placeholder="Вставь код — он начинается с ОХС1."></textarea>
+    <div id="instInfo" class="inst-note"></div>
+    <div class="inst-row"><button class="b go" id="instCheck">Проверить код</button>
+      <button class="b" data-inst-close>${first ? "Начать заново" : "Отмена"}</button></div>`);
+  $("#instCheck").onclick = () => {
+    const { data, error } = parseSaveCode($("#instCode").value);
+    const info = $("#instInfo");
+    if (error) { info.textContent = error; return }
+    info.innerHTML = `В коде: уровень ${(data.profile && data.profile.level) || 1} · чудищ ${data.mons.length}
+      · золота ${fmt(data.gold || 0)}<br><button class="b hot" id="instGo">Загрузить и заменить текущий прогресс</button>`;
+    arm($("#instGo"), "Точно? Текущий прогресс исчезнет", () => {
+      const err = applySave(data);
+      if (err) return toast(err, "bad");
+      location.reload();
+    });
+  };
+}
+
+/* ---------- ненавязчивая подсказка в браузере телефона ---------- */
+
+function installHint() {
+  if (isStandalone() || !isPhone() || lsGet(INSTALL_HINT_KEY)) return;
+  if (!installPrompt && !isIOS()) return;           // ставить тут нечем — молчим
+  const bar = document.createElement("div");
+  bar.id = "installHint";
+  bar.innerHTML = `<img src="icons/icon-192.png" alt="">
+    <span><b>Играй как в приложении</b><small>на весь экран, без прыжков страницы и без интернета</small></span>
+    <button class="b sm go" id="instHintGo">Установить</button>
+    <button class="inst-x" id="instHintX" aria-label="Скрыть">✕</button>`;
+  document.body.append(bar);
+  const hide = () => { lsSet(INSTALL_HINT_KEY, "1"); bar.remove() };
+  $("#instHintX").onclick = hide;
+  $("#instHintGo").onclick = () => { hide(); installApp() };
+}
+
+function initInstall() {
+  addEventListener("beforeinstallprompt", e => {
+    e.preventDefault();                               // своё окно покажем по кнопке
+    installPrompt = e;
+    bus.emit("install:changed");
+  });
+  addEventListener("appinstalled", () => { installPrompt = null; lsSet(INSTALL_HINT_KEY, "1"); bus.emit("install:changed") });
+
+  if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost"))
+    navigator.serviceWorker.register("sw.js").catch(e => console.warn("офлайн-режим не включился:", e));
+
+  if (isStandalone()) document.documentElement.classList.add("app-mode");
+
+  // подсказку показываем не сразу: сперва пусть человек увидит сам остров
+  setTimeout(installHint, 25000);
+
+  // первое открытие приложения на iPhone с пустым островом — предлагаем перенос
+  if (isStandalone() && isIOS() && !lsGet(TRANSFER_KEY)
+      && (S.profile.level || 1) <= 1 && !S.mons.length) {
+    lsSet(TRANSFER_KEY, "1");
+    setTimeout(() => showPasteSave(true), 1200);
+  }
+}
+
+/** Блок «Приложение» и кнопки кода сохранения для профиля. */
+function installProfileHtml() {
+  const state = isStandalone()
+    ? `<p class="pf-note">✓ Ты играешь в приложении.</p>`
+    : `<p class="pf-note">Поставь игру значком на экран телефона: откроется на весь экран и будет работать без интернета.</p>
+       <div class="rowb"><button class="b sm go" id="pfInstall">Установить приложение</button></div>`;
+  return `<div class="pf-save"><h3>Приложение</h3>${state}</div>`;
+}
+function wireInstallProfile() {
+  const btn = $("#pfInstall");
+  if (btn) btn.onclick = installApp;
+  const copy = $("#pfCopyCode");
+  if (copy) copy.onclick = async () => toast(await copyText(saveCode())
+    ? "Код сохранения скопирован" : "Не вышло скопировать", "good");
+  const paste = $("#pfPasteCode");
+  if (paste) paste.onclick = () => showPasteSave(false);
+}
+
 /* ===== src/main.js ===== */
 /* Точка входа: собирает модули, поднимает мир и запускает кадры. */
 
@@ -16499,6 +16746,7 @@ async function boot() {
   initAdventure();
   initDungeon();
   initArena();
+  initInstall();
   initChuddex();
   initIsles();
   initProfile();
