@@ -2892,6 +2892,10 @@ const ASSET_SRC = {
   hronomeh1: "assets/МонстрХрономехЭтап1.png", hronomeh2: "assets/МонстрХрономехЭтап2.png", hronomeh3: "assets/МонстрХрономехЭтап3.png",
   rozognevEgg: "assets/МонстрРозогневЭтапЯйцо.png",
   rozognev1: "assets/МонстрРозогневЭтап1.png", rozognev2: "assets/МонстрРозогневЭтап2.png", rozognev3: "assets/МонстрРозогневЭтап3.png",
+  noctiloraEgg: "assets/МонстрНоктилораЭтапЯйцо.png",
+  noctilora1: "assets/МонстрНоктилораЭтап1.png", noctilora2: "assets/МонстрНоктилораЭтап2.png", noctilora3: "assets/МонстрНоктилораЭтап3.png",
+  auroralisEgg: "assets/МонстрАуроралисЭтапЯйцо.png",
+  auroralis1: "assets/МонстрАуроралисЭтап1.png", auroralis2: "assets/МонстрАуроралисЭтап2.png", auroralis3: "assets/МонстрАуроралисЭтап3.png",
   aurelionEgg: "assets/МонстрАурелионЭтапЯйцо.png",
   aurelion1: "assets/МонстрАурелионЭтап1.png",
   aurelion2: "assets/МонстрАурелионЭтап2.png",
@@ -4865,6 +4869,13 @@ const SPECIES = {
     skills: ["hit", "vineLash", "fireBolt", "thorn", "entangle", "pollenMend", "petalDash", "roseInferno"],
     base: { hp: 142, atk: 44, def: 22, spd: 25 }, eggMs: 26 * 3600e3
   },
+noctilora: {
+    name: "Ноктилора", el: "dark", els: ["dark", "water"], rarity: "mythic",
+    sprites: ["noctiloraEgg", "noctilora1", "noctilora2", "noctilora3"], stages: [1, 15, 35],
+    // ночная водная хищница: усыпляет врагов и лечит лунным источником
+    skills: ["hit", "nightSlash", "waveHit", "mist", "whirl", "eclipseCurrent", "abyssalLull", "moonWell"],
+    base: { hp: 140, atk: 39, def: 24, spd: 26 }, eggMs: 28 * 3600e3
+  },
   /* ---------- богоподобные ----------
      Третья стихия у них — Богоподобие. Она стоит вне круга «кто кого бьёт»,
      зато только у неё есть приёмы пятой ступени, и жить такое чудище может
@@ -4899,6 +4910,13 @@ const SPECIES = {
     stages: [1, 10, 25, 40],
     skills: ["hit", "waveHit", "tide", "dawnRay", "judgment", "genesis"],
     base: { hp: 158, atk: 45, def: 29, spd: 20 }, eggMs: 36 * 3600e3
+  },
+auroralis: {
+    name: "Ауроралис", el: "divine", els: ["divine", "fire", "water"], rarity: "godly",
+    sprites: ["auroralisEgg", "auroralis1", "auroralis2", "auroralis3"], stages: [1, 15, 35],
+    // рассветный хищник: защищает отряд, лечит и завершает бой первотворением
+    skills: ["hit", "dawnRay", "fireBolt", "waveHit", "mercy", "haloWard", "judgment", "genesis"],
+    base: { hp: 190, atk: 50, def: 35, spd: 24 }, eggMs: 48 * 3600e3
   },
   shlaks: {
     name: "Шлакс", el: "fire", els: ["fire", "earth"], rarity: "epic",
@@ -6909,10 +6927,29 @@ const LINEAGE = [
           { species: "geodrax", chance: 38, ms: 24 * 3600e3 },
           { species: "vesperon", chance: 36, ms: 24 * 3600e3 }
         ]
+      },
+      {
+        parents: ["vesperon", "akvalira"], ms: 40 * 3600e3,
+        results: [
+          { species: "noctilora", chance: 28 },
+          { species: "vesperon", chance: 36, ms: 24 * 3600e3 },
+          { species: "akvalira", chance: 36, ms: 24 * 3600e3 }
+        ]
       }
     ]
-  }];
-
+  },
+  {
+    id: "divine",
+    name: "Богоподобие",
+    el: "divine",
+    lines: [
+      {
+        parents: ["rozognev", "noctilora"], ms: 48 * 3600e3,
+        results: [{ species: "auroralis", chance: 100 }]
+      }
+    ]
+  }
+];
 /* ---------- ветки схемы ----------
    У каждой стихии своя вкладка: завёл стихию в Мастерской — появилась и ветка.
    Пропала стихия — её линии переезжают в «Смешанные», чтобы не потеряться. */
