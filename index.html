@@ -10015,6 +10015,15 @@ function makeFoe(desc) {
 
 /* ---------- начало боя ---------- */
 
+/** Всё боевое состояние — щиты, оглушение, перезарядки — живёт один бой:
+    каждый бой боец начинает с полным здоровьем и полной энергией. */
+function readyFighter(m) {
+  m.mode = "idle"; m._guard = false; m._fell = false;
+  m._cd = {}; m._shield = 0; m._shieldTurns = 0; m._stun = 0;
+  m.hp = statsAt(m).hp;
+  m._sta = STAMINA.max;
+}
+
 /**
  * Бой отрядом. enemies — описания противников, а не готовые монстры.
  * onEnd({win, stars, alive}) зовётся после экрана итога.
@@ -10033,13 +10042,7 @@ function startTeamBattle({ enemies = [], title = "Бой", reward = {}, onEnd = 
     return false;
   }
 
-  // всё боевое состояние — щиты, оглушение, перезарядки — живёт один бой
-  for (const m of [...team, ...foes]) {
-    m.mode = "idle"; m._guard = false; m._fell = false;
-    m._cd = {}; m._shield = 0; m._shieldTurns = 0; m._stun = 0;
-    m.hp = statsAt(m).hp;             // каждый бой начинается с полного здоровья
-    m._sta = STAMINA.max;             // и полной энергии
-  }
+  for (const m of [...team, ...foes]) readyFighter(m);
   S.battle = {
     team, foes, title, reward, onEnd,
     phase: "prep",            // prep → fight → over
@@ -13146,8 +13149,11 @@ function renderBattleTeamPicker() {
       persist();
       renderBattleTeamPicker();
       if (S.battle && S.battle.phase === "prep") {
-        S.battle.team = teamMonsters().slice(0, TEAM_SIZE);
-        for (const m of S.battle.team) { m.mode = "idle"; m._fell = false }
+        /* Замена на подготовке: новичок должен выйти так же, как вышли бы все
+           при старте боя. Раньше его не готовили — он выходил с пустой
+           энергией и неполным здоровьем. Занятых (кладка, вылазка) не берём. */
+        S.battle.team = teamMonsters().filter(monsterAvailable).slice(0, TEAM_SIZE);
+        for (const m of S.battle.team) readyFighter(m);
         renderBattle();
       }
     };
@@ -15450,8 +15456,8 @@ function initAdventure() {
    ЛЕСТНИЦА. 10 / 15 / 20 ступеней по уровню арены. Сила ступени — доля от
    силы твоих трёх сильнейших чудищ на начало недели: внизу 70%, наверху
    110 / 120 / 130%. Отголосок подгоняется под нужную силу уровнем зверей,
-   гены у него свои. Каждый бой стоит попытку (5 в день, ещё — за
-   кристаллы); проигрыш ступень не отнимает.
+   гены у него свои. Каждый бой стоит попытку (запас 5, +1 каждые
+   15 минут, ещё — за кристаллы); проигрыш ступень не отнимает.
 
    РЕЙТИНГ. Победа на лестнице даёт очки рейтинга, поражение отнимает. По
    рейтингу идут ранги от Бронзы до Властителя. Чем выше ранг, тем сильнее
@@ -15467,7 +15473,8 @@ const ARENA = {
   top: [1.10, 1.20, 1.30],           // сила верхней ступени от твоего отряда
   bottom: 0.70,                      // сила нижней ступени
   upCost: [0, 2000000, 10000000],    // цена уровня (первый даром)
-  tries: 5, tryCrystals: 10,         // попыток в день и цена ещё одной
+  tries: 5, tryCrystals: 10,         // запас попыток и цена ещё одной
+  tryMs: 15 * 60e3,                  // одна попытка восстанавливается за 15 минут
   echoes: 10,                        // сколько своих отголосков помнить
   tierPower: 0.05, tierReward: 0.25, // что даёт каждая ступень ранга
   win: 18, lose: 12, peak: 10,       // очки рейтинга: победа (+номер ступени), поражение, бой на вершине
@@ -15653,7 +15660,14 @@ function ensureArena() {
     cleared: 0, peakWins: 0, history: [], chest: null, friends: [] };
   const A = S.arena;
   for (const k of ["ladder", "team", "echoes", "history", "friends"]) if (!Array.isArray(A[k])) A[k] = [];
-  if (!A.tries) A.tries = { day: null, used: 0, bought: 0 };
+  /* Попытки копятся сами: +1 каждые 15 минут, пока их меньше пяти. Купленная
+     кристаллами ложится сверху и может поднять запас выше пяти. Старое
+     сохранение считало попытки «в день» — переводим его в запас. */
+  if (!A.tries || A.tries.have == null) {
+    const old = A.tries || {};
+    const have = old.day === dayKey() ? Math.max(0, ARENA.tries + (old.bought || 0) - (old.used || 0)) : ARENA.tries;
+    A.tries = { have, at: Date.now() };
+  }
   A.lvl = clamp(A.lvl || 1, 1, ARENA.steps.length);
 
   const week = arenaWeek();
@@ -15675,18 +15689,37 @@ function ensureArena() {
     buildLadder(A);
   }
   if (A.ladder.length !== ARENA.steps[A.lvl - 1]) buildLadder(A);
-  const day = dayKey();
-  if (A.tries.day !== day) A.tries = { day, used: 0, bought: 0 };
+  regenArenaTries(A);
   A.team = A.team.filter(id => monsterById(id)).slice(0, TEAM_SIZE);
   return A;
 }
 
-const arenaTriesLeft = () => { const A = ensureArena(); return Math.max(0, ARENA.tries + A.tries.bought - A.tries.used) };
+/** Начислить попытки, накопившиеся с прошлого раза. */
+function regenArenaTries(A) {
+  const t = A.tries, now = Date.now();
+  if (t.have >= ARENA.tries) { t.at = now; return }          // запас полон — часы стоят
+  const got = Math.floor(Math.max(0, now - t.at) / ARENA.tryMs);
+  if (!got) return;
+  t.have = Math.min(ARENA.tries, t.have + got);
+  t.at = t.have >= ARENA.tries ? now : t.at + got * ARENA.tryMs;
+}
+const arenaTriesLeft = () => ensureArena().tries.have;
+/** Через сколько придёт следующая попытка (0 — запас полон). */
+const arenaNextTry = () => {
+  const t = ensureArena().tries;
+  return t.have >= ARENA.tries ? 0 : Math.max(0, t.at + ARENA.tryMs - Date.now());
+};
+/** Потратить попытку. Если запас был полон, отсчёт следующей начинается сейчас. */
+function spendArenaTry() {
+  const t = ensureArena().tries;
+  if (t.have >= ARENA.tries) t.at = Date.now();
+  t.have = Math.max(0, t.have - 1);
+}
 
 function buyArenaTry() {
   const err = spendCrystals(ARENA.tryCrystals);
   if (err) return err;
-  ensureArena().tries.bought++;
+  ensureArena().tries.have++;
   persist();
   return null;
 }
@@ -15794,7 +15827,7 @@ function arenaFight(kind, friendId) {
     };
     onLose = () => "Отряд «" + f.name + "» оказался сильнее";
   } else {
-    if (arenaTriesLeft() <= 0) return "Попытки на сегодня кончились";
+    if (arenaTriesLeft() <= 0) return "Попытки кончились — следующая через " + tleft(arenaNextTry());
     const k = arenaNextStep(), step = A.ladder[k];
     const peak = A.best >= A.ladder.length;
     enemies = stepFoes(step);
@@ -15839,7 +15872,7 @@ function arenaFight(kind, friendId) {
         bus.emit("arena:open");
         return;
       }
-      if (kind !== "friend") A.tries.used++;
+      if (kind !== "friend") spendArenaTry();
       let msg = res.win ? onWin() : onLose();
       const rankNow = arenaRankIndex();
       if (rankNow !== rankBefore) msg += rankNow > rankBefore
@@ -16043,7 +16076,7 @@ function renderArena() {
         <span class="ar-bar"><i style="width:${pct}%"></i></span>
         <small>Отголоски сильнее на ${Math.round((arenaTierPower() - 1) * 100)}%, награды щедрее на ${Math.round((arenaTierReward() - 1) * 100)}%</small></div></div>
     <div class="ar-card ar-glory"><small>Слава</small><b>${fmt(A.glory)} ✦</b></div>
-    <div class="ar-card ar-tries"><small>Попытки сегодня</small><b>${arenaTriesLeft()} / ${ARENA.tries + A.tries.bought}</b>
+    <div class="ar-card ar-tries"><small>${arenaNextTry() ? "Попытки · +1 через " + tleft(arenaNextTry()) : "Попытки · запас полон"}</small><b>${arenaTriesLeft()} / ${ARENA.tries}</b>
       <button class="b sm" data-ar="buytry">Ещё · ${ARENA.tryCrystals} <img class="ic3" src="${ASSET_SRC.crystal}" alt=""></button></div>
     <div class="ar-card ar-rule"><small>Правило недели · сброс через ${tleft(arenaWeekLeft())}</small><b>${esc(arenaRuleText())}</b></div>
     ${A.chest ? `<div class="ar-card ar-chest"><small>Сундук прошлой недели</small><div class="ar-chips">${arChips(A.chest)}</div>
@@ -16083,7 +16116,7 @@ function arenaLadderHtml() {
   // следующий бой — сразу под вкладками: иначе на телефоне до него листать всю лестницу
   const nextCard = `<section class="ar-next"><h3>${peak ? "Вершина — бой за рейтинг" : "Следующий бой · ступень " + (next + 1) + " из " + n}</h3>
       ${row(A.ladder[next], next)}
-      ${arenaTriesLeft() ? "" : `<p class="ar-note">Попытки на сегодня кончились — купи ещё одну наверху или загляни завтра.</p>`}</section>`;
+      ${arenaTriesLeft() ? "" : `<p class="ar-note">Попытки кончились — следующая через ${tleft(arenaNextTry())}. Или купи ещё одну наверху.</p>`}</section>`;
 
   const lvl = A.lvl, up = lvl < ARENA.steps.length;
   const upBlock = up ? `<div class="ar-up">
