@@ -2725,6 +2725,11 @@ html,body,#app{touch-action:pan-x pan-y}
 .tm-tray{margin-top:10px}
 .tm-tray-h{display:flex; align-items:center; justify-content:space-between; gap:8px;
   font-family:var(--disp); font-size:12.5px}
+.tm-where{display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:10px 0 4px}
+.tm-where small{width:100%; font-size:11px; font-weight:900; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-2)}
+.tm-to{padding:6px 10px; border-radius:10px; cursor:pointer; font:800 12px var(--ui); color:var(--ink);
+  background:linear-gradient(180deg,#FFFEFA,#FFF3DE); border:2px solid var(--line)}
+.tm-to.on{background:linear-gradient(180deg,#BFEFFF,#7FD0FF); border-color:var(--sky-2)}
 .tm-sep{font-size:11px; font-weight:900; letter-spacing:.06em; text-transform:uppercase;
   color:var(--ink-2); margin:12px 2px 0}
 
@@ -3278,6 +3283,7 @@ const ASSET_SRC = {
   mutagen: "assets/ИконкаМутаген.png",
   arena1: "assets/АренаОтголосковУровень1.png", arena2: "assets/АренаОтголосковУровень2.png", arena3: "assets/АренаОтголосковУровень3.png",
   arenaIcon: "assets/ИконкаАрена.png",
+  hatch1: "assets/БашняВыведенияУровень1.png", hatch2: "assets/БашняВыведенияУровень2.png", hatch3: "assets/БашняВыведенияУровень3.png",
   rankBronze: "assets/РангБронза.png", rankSilver: "assets/РангСеребро.png", rankGold: "assets/РангЗолото.png",
   rankEmerald: "assets/РангИзумруд.png", rankDiamond: "assets/РангАлмаз.png", rankChampion: "assets/РангЧемпион.png",
   rankLord: "assets/РангВластитель.png",
@@ -4223,7 +4229,7 @@ function serialize(state) {
       gold: b.gold, goldT: b.goldT, slots: b.slots, eggs: b.eggs, breed: b.breed,
       breedHistory: b.breedHistory, job: b.job,
       exp: b.exp,                                  // отряд, ушедший в вылазку
-      tom: b.tom, tray: b.tray                     // Томилка: гнёзда, кладка и лоток
+      tom: b.tom, tray: b.tray, trayTo: b.trayTo   // Томилка: гнёзда, кладка, лоток и куда нести яйца
     })),
     obstacles: state.obstacles.map(o => ({ id: o.id, type: o.type, i: o.i, j: o.j, job: o.job, isle: o.isle })),
     mons: state.mons.map(m => ({
@@ -4854,6 +4860,28 @@ const BUILDINGS = {
     size: 2, name: "Барак строителей", cost: 1200, buildMs: 45e3,
     desc: "Каждый барак — ещё один строитель.",
     sprites: ["barracks"]
+  },
+  /* Башня выведения: та же башня под яйца, но с ускорителями — яйцо в ней
+     зреет вдвое, а на третьем уровне втрое с лишним быстрее. Открывается
+     после Пепельного Зенита. speed — во сколько раз короче срок на уровне.
+     Гнёзда сняты с самих картинок: чаши на 1, 3 и 6 мест. */
+  hatchery: {
+    size: 3, name: "Башня выведения", cost: 3000000, buildMs: 60 * 60e3,
+    desc: "Ускорители гонят яйца: зреют на 50–70% быстрее, чем в обычной башне.",
+    sprites: ["hatch1", "hatch2", "hatch3"],
+    speed: [0.5, 0.4, 0.3],
+    nests: [
+      [[0.481, 0.558, 0.26]],
+      [[0.522, 0.650, 0.20], [0.202, 0.486, 0.17], [0.807, 0.486, 0.17]],
+      [[0.498, 0.695, 0.12], [0.315, 0.695, 0.12], [0.689, 0.695, 0.12],
+       [0.497, 0.462, 0.115], [0.313, 0.462, 0.115], [0.683, 0.462, 0.115]]
+    ],
+    levels: [
+      { slots: 1, up: 6000000 },
+      { slots: 3, up: 10000000 },
+      { slots: 6, up: 0 }
+    ],
+    upMs: [0, 6 * 3600e3, 12 * 3600e3]
   },
   /* Мутатор: импульсы мутации для садов своего острова (game/genetics.js).
      Один на остров. Уровень решает, сколько импульсов на кладку и насколько
@@ -5849,7 +5877,9 @@ function tomToTower(b, i) {
   const child = (b.tray || [])[i];
   if (!child) return "Яйца нет";
   const sp = child.species ? speciesOf(child.species) : null;
-  const err = startEgg(child, (sp && sp.eggMs) || BREED.eggMs);
+  const to = b.trayTo ? S.builds.find(x => x.id === b.trayTo && isIncubator(x)) : null;
+  if (b.trayTo && !to) b.trayTo = null;           // выбранную башню снесли — снова «сама»
+  const err = startEgg(child, (sp && sp.eggMs) || BREED.eggMs, to, true);
   if (err) return err;
   b.tray.splice(i, 1);
   bus.emit("ui:sheet"); persist();
@@ -6036,7 +6066,7 @@ function syncSlots(b) {
   if (b.type === "farm") {
     while (b.slots.length < n) b.slots.push({ crop: null, readyAt: 0 });
     b.slots.length = Math.max(b.slots.length, n);
-  } else if (b.type === "tower") {
+  } else if (isIncubator(b)) {
     while (b.eggs.length < n) b.eggs.push(null);
     b.eggs.length = Math.max(b.eggs.length, n);
   }
@@ -6116,7 +6146,12 @@ const obstacleAt = (gi, gj) => S.obstacles.find(o => {
   const s = OBSTACLES[o.type].size;
   return gi >= o.i && gi < o.i + s && gj >= o.j && gj < o.j + s;
 });
-const towers = () => S.builds.filter(b => b.type === "tower" && isReady(b));
+/** Башня под яйца: обычная или башня выведения с ускорителями. */
+const isIncubator = b => !!b && (b.type === "tower" || b.type === "hatchery");
+/** Во сколько раз эта башня сокращает срок яйца (1 — не сокращает). */
+const eggSpeed = b => (b && b.type === "hatchery"
+  ? BUILDINGS.hatchery.speed[clamp(b.lvl || 1, 1, BUILDINGS.hatchery.speed.length) - 1] : 1);
+const towers = () => S.builds.filter(b => isIncubator(b) && isReady(b));
 const anyTower = () => towers()[0];
 const habitatsFor = el => S.builds.filter(b => b.type === "habitat" && b.el === el && isReady(b));
 const habitatHasRoom = b =>
@@ -6433,7 +6468,7 @@ const NEST_FILL = 0.16;
 const NEST_SINK = 0.05;
 function drawTower(c, b, t) {
   const drawn = drawSpriteBuilding(c, b);
-  const s = BUILDINGS.tower.size, ctr = P(b.i + s / 2, b.j + s / 2);
+  const s = BUILDINGS[b.type].size, ctr = P(b.i + s / 2, b.j + s / 2);
   const n = slotsOf(b);
   const eggs = b.eggs || [];
   const nests = nestsOf(b);
@@ -6570,7 +6605,7 @@ function drawSite(c, b, t) {
 function drawReady(c, b, t) {
   if (b.type === "habitat") drawHabitat(c, b, t);
   else if (b.type === "farm") drawFarm(c, b, t);
-  else if (b.type === "tower") drawTower(c, b, t);
+  else if (isIncubator(b)) drawTower(c, b, t);
   else if (b.type === "breeding") drawBreeding(c, b, t);
   else drawSpriteBuilding(c, b);          // барак и всё прочее — просто картинка
 }
@@ -6626,7 +6661,7 @@ function buildingState(b) {
   if (b.job) return null;
   const now = Date.now();
   if (b.type === "farm") { const slot = (b.slots || [])[0]; if (!slot || slot.crop == null) return { icon: "🌱", label: "ПОСАДИТЬ", tone: "#397445" }; if (slot.readyAt > now) return { icon: "⏳", label: tleft(slot.readyAt - now), tone: "#2b6475" }; }
-  if (b.type === "tower") { const egg = (b.eggs || []).find(Boolean); if (!egg) return { icon: "🥚", label: "ЯЙЦО", tone: "#735a95" }; if (egg.readyAt > now) return { icon: "⏳", label: tleft(egg.readyAt - now), tone: "#735a95" }; }
+  if (isIncubator(b)) { const egg = (b.eggs || []).find(Boolean); if (!egg) return { icon: "🥚", label: "ЯЙЦО", tone: "#735a95" }; if (egg.readyAt > now) return { icon: "⏳", label: tleft(egg.readyAt - now), tone: "#735a95" }; }
   if (b.type === "breeding") { if (!b.breed) return { icon: "💞", label: "ВЫБРАТЬ ПАРУ", tone: "#9c4e75" }; if (b.breed.readyAt > now) return { icon: "⏳", label: tleft(b.breed.readyAt - now), tone: "#9c4e75" }; }
   if (b.type === "habitat" && !residentsOf(b).length) return { icon: "🏠", label: "ЗАСЕЛИТЬ", tone: "#82673c" };
   if (b.type === "tomilka") {
@@ -8168,17 +8203,23 @@ function freeSlot(b) {
  * data — то же, что у монстра: {kind, species|src, name, el, base}
  * Возвращает текст ошибки или null.
  */
-function startEgg(data, ms) {
+function startEgg(data, ms, target = null, stay = false) {
   if (!anyTower()) return "Нужна башня высиживания";
   /* Башен может быть несколько, и вторую как раз и ставят, когда в первой
      места кончились. Раньше брали towers()[0] и на полной первой башне
-     отвечали «все места заняты», хотя рядом стояла пустая. */
-  const b = towers().find(t => freeSlot(t) >= 0);
-  if (!b) return "Все места в башнях заняты — улучши башню или поставь ещё одну";
+     отвечали «все места заняты», хотя рядом стояла пустая.
+     Без явной башни яйцо идёт в самую быструю со свободным местом: башня
+     выведения раньше обычной. target — если игрок выбрал башню сам. */
+  const list = target ? [target] : towers().sort((x, y) => eggSpeed(x) - eggSpeed(y));
+  const b = list.find(t => isIncubator(t) && isReady(t) && freeSlot(t) >= 0);
+  if (!b) return target ? BUILDINGS[target.type].name + ": все места заняты"
+                        : "Все места в башнях заняты — улучши башню или поставь ещё одну";
   const slot = freeSlot(b);
-  b.eggs[slot] = { dur: ms, readyAt: Date.now() + ms, el: data.el, data };
+  const dur = Math.max(1000, Math.round(ms * eggSpeed(b)));
+  b.eggs[slot] = { dur, readyAt: Date.now() + dur, el: data.el, data };
   persist();
-  bus.emit("sheet:build", b);
+  // из лотка Томилки яйца носят пачкой — лист не должен убегать в башню
+  if (stay) bus.emit("ui:sheet"); else bus.emit("sheet:build", b);
   return null;
 }
 function rushEgg(b, slot) {
@@ -10684,6 +10725,8 @@ function shopItems() {
     { type: "breeding", cost: BUILDINGS.breeding.cost, name: "Сад разведения" },
     { type: "cave", cost: BUILDINGS.cave.cost, name: "Пещера экспедиций" },
     // ворота не по уровню профиля, а по пройденному: сперва Багрец, потом Зенит
+    { type: "hatchery", cost: BUILDINGS.hatchery.cost, name: "Башня выведения",
+      gate: () => (starsOf("zenit.10") > 0 ? null : "после Пепельного Зенита") },
     { type: "mutator", cost: BUILDINGS.mutator.cost, name: "Мутатор",
       gate: () => (starsOf("bagrec.10") > 0 ? null : "после Багреца") },
     { type: "tomilka", cost: BUILDINGS.tomilka.cost, name: "Томилка",
@@ -11160,7 +11203,10 @@ function initModals() {
       // Мутатор меряется лучшим шансом мутации на яйцо, Томилка — числом самок
       mutator: ["лучший шанс мутации", () => fmtPct(eggMutChance(rollChance(b.lvl, maxImpulses(b.lvl)))),
                 () => fmtPct(eggMutChance(rollChance(next.lvl, maxImpulses(next.lvl))))],
-      tomilka: ["самок за раз", () => slotsOf(b), () => slotsOf(next)]
+      tomilka: ["самок за раз", () => slotsOf(b), () => slotsOf(next)],
+      hatchery: ["мест · ускорение",
+                 () => slotsOf(b) + " · −" + Math.round((1 - eggSpeed(b)) * 100) + "%",
+                 () => slotsOf(next) + " · −" + Math.round((1 - eggSpeed(next)) * 100) + "%"]
     }[b.type] || ["грядок", () => slotsOf(b), () => slotsOf(next)];
     const metric = мера[0], before = мера[1](), after = мера[2]();
     $("#upgradeTitle").textContent = `Улучшить: ${BUILDINGS[b.type].name}`;
@@ -11863,8 +11909,9 @@ function towerSheet(node, b) {
     </button>`);
   }
 
-  node.innerHTML = head("Башня высиживания",
-    `<span class="hint">уровень ${b.lvl} · мест ${n}</span>`)
+  const k = eggSpeed(b);
+  node.innerHTML = head(BUILDINGS[b.type].name,
+    `<span class="hint">уровень ${b.lvl} · мест ${n}${k < 1 ? " · ускорение −" + Math.round((1 - k) * 100) + "%" : ""}</span>`)
     + `<div class="slots">${cells.join("")}</div>
       ${species.length ? "" : `<div class="empty">Видов монстров пока нет —
         добавь их в <b>data/monsters.js</b>, и они появятся здесь.</div>`}
@@ -11906,7 +11953,7 @@ function openEggGrowth(b, i) {
         ? "Точно продать?" : `Продать · ${fmtShort(eggValue(egg))} ${gold}`}</button>`;
 
   showGrowth({
-    title: "Башня высиживания",
+    title: BUILDINGS[b.type].name + (eggSpeed(b) < 1 ? " · ускорение −" + Math.round((1 - eggSpeed(b)) * 100) + "%" : ""),
     art: spriteKey ? ASSET_SRC[spriteKey] : "", glyph: "🥚",
     name: egg.data.name || "Яйцо",
     what: sp ? `<span>вылупится: ${elBadge(sp)}</span>` : "",
@@ -11950,7 +11997,7 @@ function speciesView(node, b, slot) {
     <button class="crop ${бедно ? "no" : ""}" data-sp="${id}" data-cost="${cost}">
       <div class="n">${sp.name}</div>
       <div class="d">${elBadge(sp)}</div>
-      <div class="d" style="color:var(--ink)">яйцо ${tleft(sp.eggMs || EGG.genMs)}</div>
+      <div class="d" style="color:var(--ink)">яйцо ${tleft((sp.eggMs || EGG.genMs) * eggSpeed(b))}</div>
       <div class="d price">${cost ? gold + fmt(cost) : "даром"}</div>
     </button>`;
   }).join("");
@@ -11966,7 +12013,7 @@ function speciesView(node, b, slot) {
       if (cost > S.gold) return toast("Не хватает золота", "bad");
       // золото списываем только после того, как яйцо легло: место в башне
       // могли занять, пока выбирали
-      const err = startEgg({ kind: "species", species: id, name: sp.name, el: sp.el }, sp.eggMs || EGG.genMs);
+      const err = startEgg({ kind: "species", species: id, name: sp.name, el: sp.el }, sp.eggMs || EGG.genMs, b);
       if (err) return toast(err, "bad");
       if (cost) { S.gold -= cost; bus.emit("ui:top"); persist() }
       toast(cost ? sp.name + ": яйцо в башне за " + fmt(cost) : "Яйцо в башне", "good");
@@ -12650,7 +12697,15 @@ function tomilkaSheet(node, b) {
       </div>`;
   }
 
-  const tray = t && b.tray && b.tray.length ? `<div class="tm-tray">
+  // куда нести яйца: сама (самая быстрая со свободным местом) или конкретная башня
+  const incub = towers().sort((x, y) => eggSpeed(x) - eggSpeed(y));
+  const where = b.tray && b.tray.length && incub.length > 1 ? `<div class="tm-where"><small>Куда нести яйца</small>
+      <button class="tm-to ${!b.trayTo ? "on" : ""}" data-trayto="">Сама: быстрейшая со свободным местом</button>
+      ${incub.map(x => { const free = x.eggs.filter(e => !e).length, k = eggSpeed(x);
+        return `<button class="tm-to ${b.trayTo === x.id ? "on" : ""}" data-trayto="${x.id}">${esc(BUILDINGS[x.type].name)} ${x.lvl} ур.
+          · ${k < 1 ? "−" + Math.round((1 - k) * 100) + "% · " : ""}свободно ${free}/${slotsOf(x)}</button>` }).join("")}
+    </div>` : "";
+  const tray = t && b.tray && b.tray.length ? `${where}<div class="tm-tray">
       <div class="tm-tray-h">Лоток · ${b.tray.length} ${b.tray.length === 1 ? "яйцо" : b.tray.length < 5 ? "яйца" : "яиц"}
         <button class="b sm go" data-act="tm-all">Всё в башню</button></div>
       ${b.tray.map((c, i) => {
@@ -12659,7 +12714,7 @@ function tomilkaSheet(node, b) {
         return `<div class="mrow tm-egg">
           <div class="th" style="background:url(&quot;${key ? ASSET_SRC[key] : ""}&quot;) center/contain no-repeat"></div>
           <div style="min-width:0"><div class="nm">Яйцо: ${esc(c.name || (esp ? esp.name : "чудище"))}</div>
-            <div class="mt">зреет в башне ${tleft((esp && esp.eggMs) || BREED.eggMs)}</div></div>
+            <div class="mt">зреет в башне ${tleft((esp && esp.eggMs) || BREED.eggMs)}, с ускорителем быстрее</div></div>
           <div class="sp"><button class="b sm go" data-ttower="${i}">В башню</button>
             <button class="b sm" data-tsell="${i}">Продать · ${fmtShort(eggPrice(esp))} ${gold}</button></div>
         </div>`;
@@ -12695,6 +12750,10 @@ function tomilkaSheet(node, b) {
     if (moved) toast("В башню ушло яиц: " + moved + (err ? ". " + err : ""), err ? "bad" : "good");
     else if (err) toast(err, "bad");
     render();
+  });
+  $$("#sheet [data-trayto]").forEach(x => x.onclick = () => {
+    b.trayTo = x.dataset.trayto ? +x.dataset.trayto : null;
+    persist(); render();
   });
   $$("#sheet [data-ttower]").forEach(x => x.onclick = () => {
     const err = tomToTower(b, +x.dataset.ttower);
@@ -12750,6 +12809,7 @@ function tomPickView(node, b, slot) {
  */
 function sell(b) {
   if (b.type === "habitat" && residentsOf(b).length) return toast("Сначала пересели монстров", "bad");
+  if (isIncubator(b) && (b.eggs || []).some(Boolean)) return toast("В башне лежат яйца — вылупи или продай их", "bad");
   if (b.type === "tomilka" && b.tom && b.tom.run) return toast("В Томилке идёт кладка — дождись её или отмени", "bad");
   if (b.type === "tomilka" && b.tray && b.tray.length) return toast("В лотке Томилки лежат яйца — перенеси их в башню", "bad");
   const back = Math.round((b.type === "habitat" ? HABITAT_COST[b.el] : BUILDINGS[b.type].cost) * 0.5);
@@ -12781,7 +12841,7 @@ function initSheets() {
     const b = S.builds.find(x => x.id === S.sheet.id);
     if (!b) return;
     const farmTicks = b.type === "farm" && b.slots.some(c => c && c.crop != null);
-    const towerTicks = b.type === "tower" && b.eggs.some(Boolean);
+    const towerTicks = isIncubator(b) && b.eggs.some(Boolean);
     const breedTicks = b.type === "breeding" && !!b.breed;
     const tomTicks = b.type === "tomilka" && !!(b.tom && b.tom.run) && !(S.sheet.view && S.sheet.view.name === "tomPick");
     if (b.job || farmTicks || towerTicks || breedTicks || tomTicks || b.type === "habitat" || b.type === "barracks") render();
