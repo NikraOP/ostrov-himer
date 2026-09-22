@@ -16669,8 +16669,15 @@ function onTap(x, y) {
   if (caravanPortalHit(portalPoint.x, portalPoint.y)) return openCaravan();
   if (arenaPortalHit(portalPoint.x, portalPoint.y)) return openArena();
 
+  /* Жилец логова открывается со второго касания: сперва само логово. Звери
+     стоят тесно, логова — рядом, и попасть пальцем в нужного было лотереей.
+     Когда лист логова уже открыт, касание по его жильцу открывает карточку.
+     Бродяга без логова открывается сразу, как раньше. */
   const mon = monsterAt(x, y);
   if (mon) {
+    const home = mon.home ? homeOf(mon) : null;
+    const homeOpen = home && S.sheet && S.sheet.kind === "build" && S.sheet.id === home.id;
+    if (home && !homeOpen) return openBuild(home);
     openMonster(mon);
     setMode(mon, "happy", 0.8, clock.now);
     return;
