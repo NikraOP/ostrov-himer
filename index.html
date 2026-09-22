@@ -2671,6 +2671,72 @@ html,body,#app{touch-action:pan-x pan-y}
 .gp-foot{font-size:11px; font-weight:700; color:var(--ink-2); margin-top:3px}
 
 /* ---------- импульсы ---------- */
+/* разбор характеристики в карточке */
+.mc-st{cursor:pointer; transition:transform .12s, box-shadow .12s}
+.mc-st:hover{transform:translateY(-1px)}
+.mc-st:focus-visible{outline:3px solid var(--sky); outline-offset:2px}
+.mc-st.on{box-shadow:0 0 0 2px #e8c46a, inset 0 1px #ffffff12}
+.mc-tap{margin-top:5px}
+.mc-why{margin:8px 0 4px; padding:10px; border-radius:12px; background:#0b2a36; border:1px solid #e8c46a55}
+.mc-why-eq{display:flex; flex-wrap:wrap; align-items:center; gap:4px 5px}
+.mc-why-eq i{font-style:normal; font-weight:900; color:#a4bfc1}
+.mc-why-t{display:grid; justify-items:center; min-width:50px; padding:4px 6px; border-radius:9px; background:#12394a}
+.mc-why-t b{font-size:14px; color:#f0e6ca; font-variant-numeric:tabular-nums}
+.mc-why-t small{font-size:9.5px; font-weight:800; color:#a4bfc1; white-space:nowrap}
+.mc-why-t.up b{color:#8fe07c}
+.mc-why-t.dn b{color:#ff9a8a}
+.mc-why-t.tot{background:#e8c46a; }
+.mc-why-t.tot b,.mc-why-t.tot small{color:#3a2708}
+.mc-why-note{margin:8px 0 6px; font-size:11.5px; line-height:1.4; color:#a9c4c6}
+
+/* Чуддекс: врождённая сила вида */
+.dx-innate{margin:0 0 12px; padding:12px; border-radius:14px; background:#0b2a36; border:1px solid #8daa9c55}
+.dx-innate-h{display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap; margin-bottom:8px}
+.dx-innate-h b{display:block; font-size:14px; color:#ecd8a7}
+.dx-innate-h small{display:block; font-size:11px; color:#a9c4c6; margin-top:2px}
+.dx-lv{display:flex; gap:4px}
+.dx-lv button{padding:5px 9px; border-radius:9px; cursor:pointer; font:800 12px var(--ui); color:#cfe3df;
+  background:#12394a; border:1px solid #8daa9c66}
+.dx-lv button.on{background:#e8c46a; color:#3a2708; border-color:#e8c46a}
+.dx-irow{display:grid; grid-template-columns:78px 1fr 58px 70px; align-items:center; gap:8px; padding:4px 0; font-size:12.5px}
+.dx-irow span{font-weight:800; color:#dfe9e3}
+.dx-ibar{display:block; height:9px; border-radius:99px; background:#ffffff14; overflow:hidden}
+.dx-ibar em{display:block; height:100%; border-radius:inherit; background:linear-gradient(90deg,#6fd0c8,#e8c46a)}
+.dx-irow b{text-align:right; color:#fff; font-variant-numeric:tabular-nums}
+.dx-irow small{text-align:right; font-size:11px; color:#a9c4c6; white-space:nowrap}
+.dx-innate-f{display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;
+  margin-top:8px; padding-top:8px; border-top:1px solid #ffffff14; font-size:12.5px; color:#cfe3df}
+.dx-innate-f b{color:#fff}
+.dx-cmp-acts{display:flex; gap:6px; flex-wrap:wrap}
+
+/* Чуддекс: полоска и экран сравнения */
+.dx-cmpbar{position:fixed; left:50%; transform:translateX(-50%); bottom:max(12px,env(safe-area-inset-bottom)); z-index:1;
+  display:flex; align-items:center; gap:6px; flex-wrap:wrap; justify-content:center; width:min(640px,calc(100% - 16px));
+  padding:8px 10px; border-radius:16px; background:#0b2836f2; border:1px solid #e8c46a88; box-shadow:0 10px 30px #00111c99}
+.dx-cmpbar[hidden]{display:none}
+.dx-cmp-lb{font-size:11px; font-weight:900; letter-spacing:.06em; text-transform:uppercase; color:#ecd8a7}
+.dx-cmp-chip{display:inline-flex; align-items:center; gap:5px; padding:3px 8px 3px 3px; border-radius:99px; cursor:pointer;
+  font:800 12px var(--ui); color:#eaf0e5; background:#12394a; border:1px solid #8daa9c66}
+.dx-cmp-chip .dx-art{width:26px; height:26px; object-fit:contain}
+.dx-cmp-chip i{font-style:normal; color:#ff9a8a}
+.dx-cmp{display:grid; gap:4px; margin:6px 0 10px}
+.dx-cmp-row{display:grid; grid-template-columns:78px repeat(var(--n),minmax(0,1fr)); gap:6px; align-items:center}
+.dx-cmp-row > span{font-size:12px; font-weight:800; color:#dfe9e3}
+.dx-cmp-row > b{text-align:center; padding:6px 4px; border-radius:9px; background:#12394a; color:#fff; font-variant-numeric:tabular-nums}
+.dx-cmp-row > b.best{background:#e8c46a; color:#3a2708}
+.dx-cmp-sp{display:grid; justify-items:center; gap:2px; text-align:center; min-width:0}
+.dx-cmp-sp .dx-art{height:64px; object-fit:contain}
+.dx-cmp-sp b{font-size:12.5px; color:#fff; overflow-wrap:anywhere}
+.dx-cmp-sp small{display:flex; gap:3px; align-items:center}
+
+@media (max-width:520px){
+  .dx-irow{grid-template-columns:62px 1fr 48px 58px; gap:6px; font-size:12px}
+  .dx-cmp-row{grid-template-columns:60px repeat(var(--n),minmax(0,1fr)); gap:4px}
+  .dx-cmp-sp .dx-art{height:48px}
+  .mc-why-t{min-width:44px; padding:3px 5px}
+  .mc-why-t b{font-size:13px}
+}
+
 .imp{margin:8px 0; padding:9px 10px; border-radius:12px; background:rgba(95,211,78,.12);
   border:2px solid rgba(46,138,42,.35)}
 .imp.none{font-size:12px; font-weight:700; color:var(--ink-2); background:var(--well); border-color:transparent}
@@ -5515,6 +5581,52 @@ function statsAt(m) {
     spd: Math.round(b.spd * (1 + k * 0.08) * (1 + (p - 1) * 0.3) * (1 + (r - 1) * 0.45) * geneMul(m, "spd") * arenaRuleSpeed(m))
   };
 }
+
+/* ---------- разбор характеристики ----------
+   Те же множители, что в statsAt, но по отдельности — карточка чудища
+   показывает их цепочкой, чтобы было видно, что тянет число вверх: вид,
+   уровень, облик, редкость или гены. */
+const STAT_LEVEL = { hp: 0.13, atk: 0.11, def: 0.10, spd: 0.08 };
+const STAT_NAMES = { hp: "Жизнь", atk: "Атака", def: "Защита", spd: "Скорость" };
+const STAT_KEYS = ["hp", "atk", "def", "spd"];
+
+function statParts(m, k) {
+  const sp = speciesOf(m.species);
+  const stage = stageAt(m.level, sp);
+  const p = stagePower(stage), r = rarityOf(m);
+  return {
+    base: (m.base || {})[k] || 0,
+    parts: [
+      { label: "уровень " + m.level, x: 1 + (m.level - 1) * STAT_LEVEL[k] },
+      { label: "облик " + stage, x: k === "spd" ? 1 + (p - 1) * 0.3 : p },
+      { label: r.name.toLowerCase(), x: k === "spd" ? 1 + (r.power - 1) * 0.45 : r.power },
+      { label: m.pts && m.pts[k] != null ? "гены · " + m.pts[k] + " оч." : "гены · средние", x: geneMul(m, k) }
+    ],
+    total: statsAt(m)[k]
+  };
+}
+
+/** Врождённые характеристики вида на уровне level: средние гены, без плюсов и минусов. */
+function speciesStatsAt(id, level) {
+  const sp = speciesOf(id);
+  return statsAt({ kind: "species", species: id, base: { ...(sp ? sp.base : {}) }, level,
+                   rarity: (sp && sp.rarity) || "common", pts: null });
+}
+/** Место вида по характеристике среди всех видов игры на этом уровне. */
+const innateRanks = new Map();
+function innateRank(id, level, k) {
+  const key = level + ":" + k;
+  if (!innateRanks.has(key)) innateRanks.set(key, Object.keys(SPECIES)
+    .map(x => ({ id: x, v: k === "power" ? powerOf(speciesProbe(x, level)) : speciesStatsAt(x, level)[k] }))
+    .sort((a, b) => b.v - a.v));
+  const list = innateRanks.get(key);
+  return { place: list.findIndex(x => x.id === id) + 1, of: list.length, max: list[0].v };
+}
+/** «Средний» зверь вида на уровне — для силы и сравнения. */
+const speciesProbe = (id, level) => {
+  const sp = speciesOf(id);
+  return { kind: "species", species: id, base: { ...(sp ? sp.base : {}) }, level, rarity: (sp && sp.rarity) || "common", pts: null };
+};
 
 /** Грубая «сила» чудища одним числом — для подбора отряда и сортировок. */
 const powerOf = m => {
@@ -11145,6 +11257,26 @@ let openId = null;
 let skillsOpen = false;
 /* Выбор логова свёрнут по той же причине и тем же способом. */
 let homesOpen = false;
+/* Какая характеристика раскрыта разбором «из чего сложилось». */
+let statOpen = null;
+
+/** Цепочка множителей: база вида × уровень × облик × редкость × гены = итог. */
+function statWhyHtml(m, k) {
+  const { base, parts, total } = statParts(m, k);
+  const f = x => x.toFixed(2).replace(".", ",");
+  return `<div class="mc-why">
+      <div class="mc-why-eq">
+        <span class="mc-why-t"><b>${fmt(base)}</b><small>база вида</small></span>
+        ${parts.map(p => `<i>×</i><span class="mc-why-t ${p.x > 1.0005 && p.label.startsWith("гены") ? "up" : p.x < 0.9995 ? "dn" : ""}">
+          <b>${f(p.x)}</b><small>${esc(p.label)}</small></span>`).join("")}
+        <i>=</i><span class="mc-why-t tot"><b>${fmt(total)}</b><small>${STAT_NAMES[k].toLowerCase()}</small></span>
+      </div>
+      <p class="mc-why-note">База — врождённая сила вида, одна на всех его зверей: её и сравнивай между видами.
+        Уровень и облик растят всех одинаково, редкость множит, а каждое очко генов сверх среднего даёт
+        ещё ${Math.round(GENE.per[k] * 1000) / 10}%.</p>
+      <button class="mc-more" data-dex="${esc(m.species)}">Вид в Чуддексе →</button>
+    </div>`;
+}
 
 /** Можно ли трогать набор: пятый лишний, а последний снимать нельзя. */
 function esть_проверка(есть, сейчас) {
@@ -11238,7 +11370,10 @@ function initModals() {
     const species = sp || speciesOf(m && m.species);
     if (!species) return;
     const stage = m ? monsterStage(m) : 1;
-    const stats = m ? statsAt(m) : species.base;
+    // у витрины лавки зверя нет — показываем «среднего» зверя вида на 1 уровне
+    const spId = m ? m.species : (id || Object.keys(SPECIES).find(k => SPECIES[k] === species));
+    const probe = m || speciesProbe(spId, 1);
+    const stats = statsAt(probe);
     const art = m && m.kind === "photo" ? m.src : ASSET_SRC[spriteFor(species, stage)];
     const level = m ? m.level : 1;
     const nextStage = stageLevels(species).find(x => x > level);
@@ -11282,11 +11417,11 @@ function initModals() {
             <span>✦ СИЛА</span><b>${fmt(power)}</b><small>общий рейтинг</small></div>
 
           <div class="mc-stats">
-            <div><b>${stats.hp}</b><span>ЖИЗНЬ</span></div>
-            <div><b>${stats.atk}</b><span>АТАКА</span></div>
-            <div><b>${stats.def}</b><span>ЗАЩИТА</span></div>
-            <div><b>${stats.spd}</b><span>СКОРОСТЬ</span></div>
+            ${STAT_KEYS.map(k => `<div class="mc-st ${statOpen === k ? "on" : ""}" data-stat="${k}" role="button"
+                tabindex="0" aria-expanded="${statOpen === k}"><b>${stats[k]}</b><span>${STAT_NAMES[k].toUpperCase()}</span></div>`).join("")}
           </div>
+          ${statOpen ? statWhyHtml(probe, statOpen)
+                     : `<div class="mc-hint mc-tap">Нажми на число — покажу, из чего оно сложилось.</div>`}
 
           ${m && m.kind === "species" ? `<div class="mc-sk-head">Гены
               <b>${m.sex === "m" ? "самец ♂" : "самка ♀"}</b>
@@ -11410,6 +11545,15 @@ function initModals() {
         bus.emit("ui:sheet");
       };
     });
+
+    // разбор характеристики: нажатие раскрывает, повторное — сворачивает
+    карточка.querySelectorAll("[data-stat]").forEach(el => {
+      const go = () => { statOpen = statOpen === el.dataset.stat ? null : el.dataset.stat; showMonster({ m, id, sp, cost }) };
+      el.onclick = go;
+      el.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go() } };
+    });
+    const toDex = карточка.querySelector("[data-dex]");
+    if (toDex) toDex.onclick = () => { closeModal(); bus.emit("dex:species", toDex.dataset.dex) };
 
     // смена пола: дорогая и необратимая без новой траты — спрашиваем дважды
     arm(карточка.querySelector("[data-sexswap]"), "Точно сменить пол?", () => {
@@ -13268,6 +13412,10 @@ const KIND_NAME = { damage: "урон", heal: "лечение", shield: "щит"
 let dexRoot = null;
 let filters = { rarity: "all", el: "all", own: "all" };
 let opened = null;            // ключ вида, чья страница раскрыта
+let dxLevel = 1;              // на каком уровне показывать врождённую силу
+let dxCompare = [];           // виды в сравнении (до трёх)
+let dxCmpOpen = false;        // раскрыт ли экран сравнения
+const DX_LEVELS = [1, 25, 40];
 
 /* ---------- вспомогательное ---------- */
 
@@ -13322,6 +13470,7 @@ function buildDexDom() {
     </div>
     <div class="dx-filters" id="dxFilters"></div>
     <div class="dx-grid" id="dxGrid"></div>
+    <div class="dx-cmpbar" id="dxCmp" hidden></div>
     <div class="dx-page" id="dxPage" hidden></div>`;
   document.getElementById("app").append(dexRoot);
   $("#dxClose").onclick = closeChuddex;
@@ -13395,14 +13544,17 @@ function renderGrid() {
 /** Страница вида: яйцо и три этапа взросления. */
 function renderPage() {
   const box = $("#dxPage");
+  if (dxCmpOpen) return renderCompare();
   if (!opened || !SPECIES[opened]) { box.hidden = true; return }
 
   const id = opened, sp = SPECIES[id], known = dexKnown(id), r = rarityOf(sp);
   const src = sourceOf(id);
   const els = elementsOf(sp).map(e =>
     `<span class="dx-el">${elIcon(e)}${ELEMENTS[e].name}</span>`).join("");
-  // статы первого этапа: у своих считаем по-настоящему, у чужих — базовые
-  const st = statsAt({ base: sp.base, level: 1, rarity: r.id });
+  // врождённая сила вида: выбранный уровень, средние гены — одна на всех его зверей
+  const st = speciesStatsAt(id, dxLevel);
+  const power = powerOf(speciesProbe(id, dxLevel)), powerRank = innateRank(id, dxLevel, "power");
+  const inCmp = dxCompare.includes(id);
 
   // кадров столько, сколько у вида этапов: у Бары их четыре, у прочих три
   const frames = [0, ...stageLevels(sp).map((_, k) => k + 1)].map(stage => `
@@ -13421,10 +13573,20 @@ function renderPage() {
       <div class="dx-meta">${els}<span class="dx-el">${rarityBadge(sp)} ${r.name}</span>
         <span class="dx-el src-${src.kind}">${esc(src.text)}</span></div>
       <div class="dx-frames">${frames}</div>
-      <div class="dx-stats">
-        <span>ЖИЗНЬ<b>${st.hp}</b></span><span>АТАКА<b>${st.atk}</b></span>
-        <span>ЗАЩИТА<b>${st.def}</b></span><span>СКОРОСТЬ<b>${st.spd}</b></span>
-      </div>
+      <section class="dx-innate">
+        <div class="dx-innate-h">
+          <div><b>Врождённая сила вида</b><small>${dxLevel} уровень · средние гены — без плюсов и минусов от очков</small></div>
+          <div class="dx-lv">${DX_LEVELS.map(l => `<button class="${l === dxLevel ? "on" : ""}" data-dxlv="${l}">${l} ур.</button>`).join("")}</div>
+        </div>
+        ${STAT_KEYS.map(k => { const rk = innateRank(id, dxLevel, k); return `<div class="dx-irow">
+            <span>${STAT_NAMES[k]}</span><i class="dx-ibar"><em style="width:${Math.max(3, st[k] / rk.max * 100)}%"></em></i>
+            <b>${fmt(st[k])}</b><small>${rk.place}-е из ${rk.of}</small></div>` }).join("")}
+        <div class="dx-innate-f">
+          <span>Сила <b>${fmt(power)}</b> · ${powerRank.place}-е место из ${powerRank.of}</span>
+          <span class="dx-cmp-acts"><button class="b sm ${inCmp ? "go" : ""}" data-dxcmp>${inCmp ? "✓ В сравнении" : "＋ Сравнить"}</button>
+            ${dxCompare.length >= 2 ? `<button class="b sm gold" data-dxcmpopen>Открыть сравнение · ${dxCompare.length}</button>` : ""}</span>
+        </div>
+      </section>
       <div class="dx-skills">${skillsOf(sp).map((ab, i) => `
         <div class="dx-skill k-${ab.kind}">
           <span class="dx-sk-ic">${ab.el ? `<img src="${ASSET_SRC[ELEMENTS[ab.el].icon]}" alt="">` : (ab.icon || "✦")}</span>
@@ -13440,6 +13602,62 @@ function renderPage() {
         : "Пока открыто только яйцо. Выведи этого зверя — и все этапы взросления проявятся."}</p>
     </div>`;
   $("#dxBack").onclick = () => { opened = null; renderPage() };
+  box.querySelectorAll("[data-dxlv]").forEach(b => b.onclick = () => { dxLevel = +b.dataset.dxlv; renderPage() });
+  const cmp = box.querySelector("[data-dxcmp]");
+  if (cmp) cmp.onclick = () => { toggleCompare(id); renderPage() };
+  const cmpOpen = box.querySelector("[data-dxcmpopen]");
+  if (cmpOpen) cmpOpen.onclick = () => { dxCmpOpen = true; renderPage() };
+}
+
+/* ---------- сравнение видов ---------- */
+
+function toggleCompare(id) {
+  if (dxCompare.includes(id)) dxCompare = dxCompare.filter(x => x !== id);
+  else if (dxCompare.length >= 3) return toast("В сравнении уже три вида — убери одного", "bad");
+  else dxCompare.push(id);
+  renderCmpBar();
+}
+
+/** Полоска внизу Чуддекса: кто в сравнении и кнопка «Сравнить». */
+function renderCmpBar() {
+  const bar = $("#dxCmp");
+  if (!bar) return;
+  bar.hidden = !dxCompare.length;
+  if (!dxCompare.length) return;
+  bar.innerHTML = `<span class="dx-cmp-lb">Сравнение</span>
+    ${dxCompare.map(id => `<button class="dx-cmp-chip" data-cmpx="${id}" title="Убрать">
+        ${stageArt(id, 1, dexKnown(id))}<b>${esc(SPECIES[id].name)}</b><i>✕</i></button>`).join("")}
+    <button class="b sm go" data-cmpgo ${dxCompare.length < 2 ? "disabled" : ""}>${dxCompare.length < 2 ? "Добавь ещё вид" : "Сравнить"}</button>`;
+  bar.querySelectorAll("[data-cmpx]").forEach(b => b.onclick = () => { toggleCompare(b.dataset.cmpx); renderPage() });
+  const go = bar.querySelector("[data-cmpgo]");
+  if (go) go.onclick = () => { dxCmpOpen = true; renderPage() };
+}
+
+/** Экран сравнения: виды столбцами, характеристики строками, лучшее подсвечено. */
+function renderCompare() {
+  const box = $("#dxPage");
+  const ids = dxCompare.filter(id => SPECIES[id]);
+  if (ids.length < 2) { dxCmpOpen = false; return renderPage() }
+  const probes = ids.map(id => speciesProbe(id, dxLevel));
+  const rows = [...STAT_KEYS.map(k => [STAT_NAMES[k], probes.map(p => statsAt(p)[k])]), ["Сила", probes.map(powerOf)]];
+  box.hidden = false;
+  box.innerHTML = `<div class="dx-page-card dx-cmp-card">
+      <div class="dx-page-head"><h3>Сравнение видов</h3><button class="b sm x" id="dxBack">Назад</button></div>
+      <div class="dx-innate-h"><div><small>${dxLevel} уровень · средние гены — чистая сила вида</small></div>
+        <div class="dx-lv">${DX_LEVELS.map(l => `<button class="${l === dxLevel ? "on" : ""}" data-dxlv="${l}">${l} ур.</button>`).join("")}</div></div>
+      <div class="dx-cmp" style="--n:${ids.length}">
+        <div class="dx-cmp-row dx-cmp-top"><span></span>${ids.map(id => `<div class="dx-cmp-sp">
+            ${stageArt(id, stageAt(dxLevel, SPECIES[id]), dexKnown(id))}<b>${esc(SPECIES[id].name)}</b>
+            <small>${rarityBadge(SPECIES[id])} ${elementsOf(SPECIES[id]).map(e => elIcon(e)).join("")}</small></div>`).join("")}</div>
+        ${rows.map(([name, vals]) => { const top = Math.max(...vals); return `<div class="dx-cmp-row">
+            <span>${name}</span>${vals.map(v => `<b class="${v === top ? "best" : ""}">${fmt(v)}</b>`).join("")}</div>` }).join("")}
+      </div>
+      <p class="dx-note">Подсвечено лучшее в строке. У живых зверей сверху лягут гены: каждое очко выше среднего — прибавка.</p>
+      <div class="rowb"><button class="b sm" id="dxCmpClear">Очистить сравнение</button></div>
+    </div>`;
+  $("#dxBack").onclick = () => { dxCmpOpen = false; renderPage() };
+  box.querySelectorAll("[data-dxlv]").forEach(b => b.onclick = () => { dxLevel = +b.dataset.dxlv; renderCompare() });
+  $("#dxCmpClear").onclick = () => { dxCompare = []; dxCmpOpen = false; renderCmpBar(); renderPage() };
 }
 
 /* ---------- сборка ---------- */
@@ -13450,11 +13668,12 @@ function renderChuddex() {
   $("#dxCount").textContent = "открыто " + all.filter(dexKnown).length + " из " + all.length;
   renderFilters();
   renderGrid();
+  renderCmpBar();
   renderPage();
 }
 function openChuddex() {
   if (!dexRoot) buildDexDom();
-  opened = null;
+  opened = null; dxCmpOpen = false;
   renderChuddex();
   dexRoot.classList.add("on");
   const dock = $("#dock");
@@ -13475,6 +13694,8 @@ function initChuddex() {
   const btn = $("#dexBtn");
   if (btn) btn.onclick = () => (chuddexOpen() ? closeChuddex() : openChuddex());
   bus.on("dex:open", openChuddex);
+  // из карточки чудища — сразу на страницу его вида
+  bus.on("dex:species", id => { openChuddex(); if (SPECIES[id]) { opened = id; renderPage() } });
   bus.on("battle:start", closeChuddex);
   addEventListener("keydown", e => { if (e.key === "Escape" && chuddexOpen()) closeChuddex() });
 }
