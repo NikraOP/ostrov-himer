@@ -3173,10 +3173,9 @@ const cv  = document.getElementById("cv");
 const ctx = cv.getContext("2d");
 const view  = { W: 0, H: 0, dpr: 1 };
 const clock = { now: 0, dt: 0 };
-/* iPhone, игра как приложение, прозрачная строка состояния: WebKit отдаёт
-   высоту окна без этой строки, хотя рисует страницу от самого верха экрана, —
-   внизу остаётся пустая полоса ровно в её высоту. Досчитываем сами, но не
-   выше экрана: если Apple ошибку исправит, лишнего не прибавится. */
+/* Отступ под «чёлку» сверху. У приложения на iPhone, поставленного с
+   прозрачной строкой состояния, он больше нуля — по нему ui/install.js
+   узнаёт старую установку (у неё внизу пустая полоса, см. там). */
 let safeTopProbe = null;
 function safeTop() {
   if (!safeTopProbe) {
@@ -3186,23 +3185,12 @@ function safeTop() {
   }
   return parseFloat(getComputedStyle(safeTopProbe).paddingTop) || 0;
 }
-function appHeight() {
-  const h = innerHeight;
-  if (navigator.standalone !== true || !/iPhone|iPod/.test(navigator.userAgent)) return h;
-  const long = Math.max(screen.width, screen.height), short = Math.min(screen.width, screen.height);
-  const screenH = innerWidth > innerHeight ? short : long;
-  return Math.max(h, Math.min(screenH, h + safeTop()));
-}
-
 function resizeCanvas() {
   /* Потолок плотности: на 2K мониторе с dpr 2 холст вышел бы в 14 миллионов
      точек, и каждый кадр пришлось бы закрашивать их все. Полтора даёт ту же
      резкость для рисованной графики и вчетверо меньше работы. */
   view.dpr = Math.min(1.5, devicePixelRatio || 1);
-  view.W = innerWidth; view.H = appHeight();
-  // окно игры тянем на ту же высоту, что и холст, — иначе снизу виден фон страницы
-  const app = document.getElementById("app");
-  if (app) { app.style.bottom = view.H !== innerHeight ? "auto" : ""; app.style.height = view.H !== innerHeight ? view.H + "px" : "" }
+  view.W = innerWidth; view.H = innerHeight;
   cv.width  = Math.round(view.W * view.dpr);
   cv.height = Math.round(view.H * view.dpr);
   ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
@@ -16394,6 +16382,9 @@ function initInstall() {
   // подсказку показываем не сразу: сперва пусть человек увидит сам остров
   setTimeout(installHint, 25000);
 
+  // значок поставлен со старой настройкой — подскажем переставить (не чаще раза в день)
+  setTimeout(reinstallHint, 2500);
+
   // первое открытие приложения на iPhone с пустым островом — предлагаем перенос
   if (isStandalone() && isIOS() && !lsGet(TRANSFER_KEY)
       && (S.profile.level || 1) <= 1 && !S.mons.length) {
@@ -16402,10 +16393,42 @@ function initInstall() {
   }
 }
 
+/* Первые установки на iPhone делались с прозрачной строкой состояния. iPhone
+   запоминает эту настройку при добавлении значка и не перечитывает её, а с
+   ней окно приложения выходит короче экрана — внизу пустая полоса, которую
+   страница ничем не закрасит. Лечится только переустановкой значка, а при
+   удалении значка iPhone стирает сохранение приложения, — поэтому сперва код. */
+const REINSTALL_KEY = "ostrov-himer.reinstall-day";
+function reinstallHint(force = false) {
+  const old = isStandalone() && isIOS() && innerHeight > innerWidth && safeTop() > 20;
+  if (!old) return false;
+  const today = new Date().toDateString();
+  if (!force && lsGet(REINSTALL_KEY) === today) return true;
+  lsSet(REINSTALL_KEY, today);
+  instModal(`<h3>Обнови значок приложения</h3>
+    <p class="inst-note">Этот значок поставлен со старой настройкой, из-за неё внизу экрана пустая полоса.
+      Исправится, если поставить значок заново. <b>При удалении значка iPhone стирает прогресс</b> —
+      поэтому сперва сохрани код.</p>
+    <ol class="inst-steps">
+      <li>Нажми <b>«Скопировать код»</b> ниже и вставь его в <b>Заметки</b> — это твоё сохранение.</li>
+      <li>Удали значок «Остров Химер» с экрана «Домой».</li>
+      <li>Открой игру в Safari → <b>«Поделиться»</b> <span class="inst-share" aria-hidden="true"></span> → <b>«На экран Домой»</b>.</li>
+      <li>Открой новое приложение и вставь код из Заметок.</li>
+    </ol>
+    <div class="inst-row"><button class="b go" id="instCopy">Скопировать код</button>
+      <button class="b" data-inst-close>Позже</button></div>`);
+  $("#instCopy").onclick = async () => toast(await copyText(saveCode())
+    ? "Код скопирован — вставь его в Заметки" : "Не вышло скопировать — сделай это в профиле", "good");
+  return true;
+}
+
 /** Блок «Приложение» и кнопки кода сохранения для профиля. */
 function installProfileHtml() {
+  const old = isStandalone() && isIOS() && innerHeight > innerWidth && safeTop() > 20;
   const state = isStandalone()
-    ? `<p class="pf-note">✓ Ты играешь в приложении.</p>`
+    ? (old ? `<p class="pf-note">Значок стоит со старой настройкой — внизу пустая полоса.</p>
+        <div class="rowb"><button class="b sm go" id="pfReinstall">Как исправить</button></div>`
+           : `<p class="pf-note">✓ Ты играешь в приложении.</p>`)
     : `<p class="pf-note">Поставь игру значком на экран телефона: откроется на весь экран и будет работать без интернета.</p>
        <div class="rowb"><button class="b sm go" id="pfInstall">Установить приложение</button></div>`;
   return `<div class="pf-save"><h3>Приложение</h3>${state}</div>`;
@@ -16413,6 +16436,8 @@ function installProfileHtml() {
 function wireInstallProfile() {
   const btn = $("#pfInstall");
   if (btn) btn.onclick = installApp;
+  const re = $("#pfReinstall");
+  if (re) re.onclick = () => reinstallHint(true);
   const copy = $("#pfCopyCode");
   if (copy) copy.onclick = async () => toast(await copyText(saveCode())
     ? "Код сохранения скопирован" : "Не вышло скопировать", "good");
