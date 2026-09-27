@@ -2668,6 +2668,7 @@ html,body,#app{touch-action:pan-x pan-y}
 .gp-row b{text-align:center; font-weight:900; padding:2px 0; border-radius:7px}
 .gp-row b.best{background:rgba(95,211,78,.28); color:var(--mut-ink)}
 .gp-h b{font-size:11px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.gp-mut b{font-size:11.5px; color:var(--ink-2)}
 .gp-foot{font-size:11px; font-weight:700; color:var(--ink-2); margin-top:3px}
 
 /* ---------- импульсы ---------- */
@@ -5646,8 +5647,11 @@ const powerOf = m => {
 
    НАСЛЕДОВАНИЕ. Каждая характеристика наследуется отдельно: детёныш берёт её
    у отца или у матери, с шансом 55% — ту, что выше. Так урон отца и здоровье
-   матери собираются в одном звере. Передают очки только родители не ниже
-   GENE.breedLevel уровня, младше — детёныш выходит со свежим раскладом.
+   матери собираются в одном звере. Очки и накопленные мутации передаются
+   всегда, при любом уровне родителей: раньше родитель младше десятого уровня
+   обнулял детёнышу всю линию, и мутанта, выведенного на первом уровне,
+   нельзя было сразу пустить в дело. Новые мутации выпадают только у пары,
+   где оба не младше GENE.breedLevel уровня, — это и держит темп.
    Гибрид из схемы родства наследует очки тоже: переносится отклонение от
    среднего, поэтому сильная линия остаётся сильной и у вида другой редкости.
 
@@ -5670,7 +5674,7 @@ const GENE = {
   // сколько очков раздаётся при вылуплении
   total: { common: 20, rare: 24, epic: 28, legend: 32, mythic: 36, godly: 40 },
   better: 0.55,      // шанс взять у родителей лучшее из двух
-  breedLevel: 10,    // с какого уровня родители передают очки
+  breedLevel: 10,    // с какого уровня у пары выпадают новые мутации
   rolls: 3,          // бросков мутации на яйцо
   chance: 0.025,     // шанс одного броска без импульсов
   gain: 2,           // очков за одну мутацию
@@ -5736,7 +5740,7 @@ function migrateGenes(m) {
   return giveGenes(m);
 }
 
-/** Передадут ли эти двое свои очки. */
+/** Могут ли у этой пары выпасть НОВЫЕ мутации: оба не младше GENE.breedLevel. */
 const canPass = (a, b) => !!a && !!b && a.level >= GENE.breedLevel && b.level >= GENE.breedLevel;
 
 /** Отец и мать пары: по полу, а без пола — по порядку. */
@@ -5753,10 +5757,6 @@ function parentsOf(a, b) {
 function inheritGenes(a, b, chance, rarity) {
   const { dad, mom } = parentsOf(a, b);
   const out = { sex: rollSex(), mutF: 0, mutM: 0, mutNew: [] };
-  if (!canPass(dad, mom)) {
-    out.pts = rollGenes(rarity); out.mp = zeroGenes();
-    return out;
-  }
   giveGenes(dad); giveGenes(mom);
   const avg = geneAvg(rarity);
   out.pts = {}; out.mp = {};
@@ -5771,7 +5771,8 @@ function inheritGenes(a, b, chance, rarity) {
   }
   out.mutF = mutTotal(dad);
   out.mutM = mutTotal(mom);
-  for (let r = 0; r < GENE.rolls; r++) {
+  // очки и старые мутации уже перешли; новые — только у взрослой пары
+  if (canPass(dad, mom)) for (let r = 0; r < GENE.rolls; r++) {
     const side = Math.random() < 0.5 ? "F" : "M";
     if (mutTotal(side === "F" ? dad : mom) >= GENE.cap) continue;
     if (Math.random() >= chance) continue;
@@ -5951,6 +5952,8 @@ function tomStart(b, imp = 0) {
   const fem = t.females.map(monsterById).filter(Boolean);
   imp = clamp(imp | 0, 0, maxImpulses(TOM_LAB_LEVEL));
   if (imp) {
+    if ([male, ...fem].some(m => m.level < GENE.breedLevel))
+      return "Импульс не сработает: новые мутации выпадают, только если все в Томилке не младше " + GENE.breedLevel + " уровня";
     const err = spendMutagen(impulseCost(imp, fem.length));
     if (err) return err;
   }
@@ -8525,6 +8528,7 @@ function startBreeding(garden, a, b, imp = 0) {
   if (imp) {
     const lab = mutatorOn(isleOf(garden));
     if (!lab) return "Для импульса нужен Мутатор на этом острове";
+    if (!canPass(a, b)) return "Импульс не сработает: новые мутации выпадают, только если оба родителя не младше " + GENE.breedLevel + " уровня";
     if (imp > maxImpulses(lab.lvl)) return "Этому Мутатору доступен только " + maxImpulses(lab.lvl) + " импульс";
     const err = spendMutagen(impulseCost(imp));
     if (err) return err;
@@ -10736,9 +10740,8 @@ function genesHtml(m) {
 /** Прогноз пары: чьё очко выше по каждой характеристике. */
 function genePreview(a, c) {
   const { dad, mom } = parentsOf(a, c);
-  if (!canPass(dad, mom)) return `<div class="empty">Очки передают родители с ${GENE.breedLevel} уровня.
-    Пока кто-то младше, детёныш выйдет со случайным раскладом.</div>`;
   giveGenes(dad); giveGenes(mom);
+  const взрослые = canPass(dad, mom);
   const rows = GENE_KEYS.map(k => {
     const x = dad.pts[k] || 0, y = mom.pts[k] || 0;
     return `<div class="gp-row"><span>${GENE.names[k]}</span>
@@ -10748,9 +10751,11 @@ function genePreview(a, c) {
   return `<div class="gp">
       <div class="gp-row gp-h"><span></span><b>♂ ${esc(dad.name)}</b><b>♀ ${esc(mom.name)}</b></div>
       ${rows}
-      <div class="gp-foot">Каждую характеристику детёныш берёт у одного из родителей: с шансом
+      <div class="gp-row gp-mut"><span>Мутаций</span><b>${mutTotal(dad)}/${GENE.cap}</b><b>${mutTotal(mom)}/${GENE.cap}</b></div>
+      <div class="gp-foot">Каждую характеристику детёныш берёт у одного из родителей вместе с её мутациями: с шансом
         ${Math.round(GENE.better * 100)}% — ту, что выше (подсвечена).${упёрлись
-        ? " <b>У обоих по " + GENE.cap + " мутаций — новых не выпадет. Возьми «чистую» самку.</b>" : ""}</div>
+        ? " <b>У обоих по " + GENE.cap + " мутаций — новых не выпадет. Возьми «чистую» самку.</b>" : ""}${взрослые ? ""
+        : " <b>Новые мутации выпадают, только если оба родителя не младше " + GENE.breedLevel + " уровня.</b> Очки и старые мутации передадутся и так."}</div>
     </div>`;
 }
 
@@ -12832,7 +12837,7 @@ function tomilkaSheet(node, b) {
       <div class="empty">${sp
         ? `Вид Томилки: <b>${esc(sp.name)}</b>. Самец покрывает всех самок разом, каждая откладывает своё яйцо.`
         : "Поставь самца и самок одного вида. Самец покрывает всех разом, каждая самка откладывает своё яйцо."}
-        ${young ? ` Очки передают только родители с ${GENE.breedLevel} уровня.` : ""}</div>
+        ${young ? ` Очки и мутации передадутся и так, но новые мутации выпадают только у зверей с ${GENE.breedLevel} уровня.` : ""}</div>
       ${impulsePicker(TOM_LAB_LEVEL, imp, Math.max(1, count))}
       <div class="rowb">
         <button class="b go big" data-act="tm-start" ${problem ? "disabled" : ""}>
